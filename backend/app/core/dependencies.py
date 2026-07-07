@@ -7,6 +7,7 @@ from sqlalchemy.orm import joinedload
 
 from ..core.database import get_db
 from ..models import Session, User
+from ..models.enums import UserRole
 
 
 async def get_current_user(
@@ -33,6 +34,6 @@ async def get_current_user(
 
 
 async def get_current_admin(user: User = Depends(get_current_user)) -> User:
-    if user.role != "admin":
+    if user.role != UserRole.ADMIN:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     return user

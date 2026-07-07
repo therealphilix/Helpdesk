@@ -7,7 +7,7 @@ from ..core.database import get_db
 from ..core.dependencies import get_current_admin, get_current_user
 from ..core.security import generate_session_token, hash_password, session_expiry, verify_password
 from ..models import Session, User
-from ..schemas import LoginRequest, UserCreate, UserOut
+from ..schemas import LoginRequest, UserOut
 
 router = APIRouter()
 

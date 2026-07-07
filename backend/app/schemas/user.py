@@ -3,12 +3,14 @@ from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field
 
+from ..models.enums import UserRole
+
 
 class UserOut(BaseModel):
     id: uuid.UUID
     email: str
     name: str
-    role: str
+    role: UserRole
     is_active: bool
     created_at: datetime
 
