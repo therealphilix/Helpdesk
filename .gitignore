@@ -40,3 +40,5 @@ backend/alembic/versions/*.pyc
 
 .kilo/*
 .kilo
+seed.py
+backend/alembic/versions/
