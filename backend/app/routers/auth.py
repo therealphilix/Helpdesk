@@ -12,7 +12,7 @@ from ..schemas import LoginRequest, UserOut
 router = APIRouter()
 
 
-@router.post("/login")
+@router.post("/login", response_model=UserOut)
 async def login(
     body: LoginRequest,
     response: Response,
@@ -39,7 +39,7 @@ async def login(
         samesite="lax",
         max_age=settings.SESSION_EXPIRE_HOURS * 3600,
     )
-    return {"ok": True}
+    return UserOut.model_validate(user)
 
 
 @router.post("/logout")

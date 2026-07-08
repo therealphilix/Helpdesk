@@ -1,23 +1,33 @@
-import { useEffect, useState } from 'react'
+import { useState, type ReactNode } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { RouterProvider } from "@tanstack/react-router";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { router } from "./router";
 
-function App() {
-  const [status, setStatus] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+function AuthGate({ children }: { children: ReactNode }) {
+  const { loading } = useAuth();
 
-  useEffect(() => {
-    fetch('/api/health')
-      .then((res) => res.json())
-      .then((data) => setStatus(data.status))
-      .catch(() => setError('Failed to reach backend'))
-  }, [])
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500">Loading...</p>
+      </div>
+    );
+  }
 
-  return (
-    <div className="p-8">
-      {status && <p className="text-green-600">Backend status: {status}</p>}
-      {error && <p className="text-red-600">{error}</p>}
-      {!status && !error && <p className="text-gray-500">Checking backend...</p>}
-    </div>
-  )
+  return <>{children}</>;
 }
 
-export default App
+export function App() {
+  const [queryClient] = useState(() => new QueryClient());
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <AuthGate>
+          <RouterProvider router={router} />
+        </AuthGate>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+}
