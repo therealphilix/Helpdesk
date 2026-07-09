@@ -1,6 +1,13 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "../contexts/AuthContext";
 import { Navbar } from "../components/Navbar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export function HomePage() {
   const { user, loading } = useAuth();
@@ -9,7 +16,11 @@ export function HomePage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Loading...</p>
+        <Card className="w-fit">
+          <CardContent className="py-4 text-center text-muted-foreground">
+            Loading...
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -23,8 +34,17 @@ export function HomePage() {
     <div>
       <Navbar />
       <main className="p-8">
-        <h1 className="text-2xl font-bold">Welcome, {user.name}</h1>
-        <p className="text-gray-600 mt-2">This is the helpdesk dashboard.</p>
+        <Card>
+          <CardHeader>
+            <CardTitle>Welcome, {user.name}</CardTitle>
+            <CardDescription>This is the helpdesk dashboard.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              Use the navigation above to manage tickets and access helpdesk features.
+            </p>
+          </CardContent>
+        </Card>
       </main>
     </div>
   );

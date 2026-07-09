@@ -3,6 +3,18 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "../contexts/AuthContext";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import type { AxiosError } from "axios";
 
 const loginSchema = z.object({
@@ -44,67 +56,68 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-background">
       <form
         noValidate
         onSubmit={handleSubmit(onSubmit)}
-        className="bg-white p-8 rounded-lg shadow-md w-full max-w-sm"
+        className="w-full max-w-sm"
       >
-        <h1 className="text-2xl font-bold mb-6 text-center">
-          Helpdesk Login
-        </h1>
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle>Helpdesk Login</CardTitle>
+            <CardDescription>
+              Enter your credentials to access the helpdesk
+            </CardDescription>
+          </CardHeader>
 
-        {errors.root && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded text-sm">
-            {errors.root.message}
-          </div>
-        )}
+          <CardContent className="flex flex-col gap-4">
+            {errors.root && (
+              <Alert variant="destructive">
+                <AlertDescription>{errors.root.message}</AlertDescription>
+              </Alert>
+            )}
 
-        <div className="mb-4">
-          <label
-            htmlFor="email"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            {...register("email")}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errors.email ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-blue-500"}`}
-          />
-          {errors.email && (
-            <p className="text-red-600 text-xs mt-1">{errors.email.message}</p>
-          )}
-        </div>
+            <div>
+              <Label htmlFor="email" className="mb-1.5">
+                Email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                {...register("email")}
+                aria-invalid={!!errors.email}
+              />
+              {errors.email && (
+                <p className="text-destructive text-xs mt-1.5">
+                  {errors.email.message}
+                </p>
+              )}
+            </div>
 
-        <div className="mb-6">
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            {...register("password")}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errors.password ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-blue-500"}`}
-          />
-          {errors.password && (
-            <p className="text-red-600 text-xs mt-1">
-              {errors.password.message}
-            </p>
-          )}
-        </div>
+            <div>
+              <Label htmlFor="password" className="mb-1.5">
+                Password
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                {...register("password")}
+                aria-invalid={!!errors.password}
+              />
+              {errors.password && (
+                <p className="text-destructive text-xs mt-1.5">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
+          </CardContent>
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors cursor-pointer"
-        >
-          {isSubmitting ? "Signing in..." : "Sign In"}
-        </button>
+          <CardFooter>
+            <Button type="submit" disabled={isSubmitting} className="w-full">
+              {isSubmitting ? "Signing in..." : "Sign In"}
+            </Button>
+          </CardFooter>
+        </Card>
       </form>
     </div>
   );
