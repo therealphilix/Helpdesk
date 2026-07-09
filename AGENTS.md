@@ -67,7 +67,7 @@ helpdesk/
 │   │   │   └── client.ts        # Axios instance (baseURL /api, withCredentials)
 │   │   ├── assets/              # Static images/icons
 │   │   ├── components/
-│   │   │   ├── Navbar.tsx       # Top nav: brand, user email, Sign Out button
+│   │   │   ├── Navbar.tsx       # Top nav: brand, admin Users link, user email, Sign Out button
 │   │   │   └── ui/              # shadcn/ui components (built on @base-ui/react primitives)
 │   │   │       ├── button.tsx   # Variants: default, outline, secondary, ghost, destructive, link
 │   │   │       ├── input.tsx    # Wraps @base-ui/react input
@@ -80,7 +80,8 @@ helpdesk/
 │   │   │   └── utils.ts         # cn() utility (clsx + tailwind-merge)
 │   │   └── routes/
 │   │       ├── HomePage.tsx     # Authenticated dashboard with welcome Card
-│   │       └── LoginPage.tsx    # Login form with react-hook-form + zod, shadcn Card/Input/Label/Alert/Button
+│   │       ├── LoginPage.tsx    # Login form with react-hook-form + zod, shadcn Card/Input/Label/Alert/Button
+│   │       └── UsersPage.tsx    # Admin-only page: checks user.role, redirects non-admin to /
 │   ├── vite.config.ts           # React + Tailwind v4 plugin, @ path alias, /api proxy → :8000
 │   ├── package.json
 │   ├── tsconfig.json            # Path alias @/* = ./src/*
@@ -166,5 +167,6 @@ cd backend && python -m pytest    # (when tests exist)
 - [x] Auth context + protected routes (redirect to /login if unauthenticated)
 - [x] TanStack Query client + Axios API client
 - [x] shadcn components: Button, Input, Card, Label, Alert
+- [x] Users page at /users (admin-only, frontend role check)
 - [ ] Layout shell (full sidebar + content area)
 - [ ] Ticket pages, admin panel, knowledge base
