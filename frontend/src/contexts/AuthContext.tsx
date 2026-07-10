@@ -13,7 +13,6 @@ export interface User {
   email: string;
   name: string;
   role: string;
-  is_active: boolean;
   created_at: string;
 }
 
@@ -39,8 +38,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    const res = await apiClient.post<User>("/auth/login", { email, password });
-    setUser(res.data);
+    const res = await apiClient.post<{ user: User }>("/auth/login", {
+      email,
+      password,
+    });
+    setUser(res.data.user);
   }, []);
 
   const logout = useCallback(async () => {
