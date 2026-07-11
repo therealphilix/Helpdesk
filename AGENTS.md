@@ -31,6 +31,7 @@ When writing code, fetch up-to-date documentation from Context7 using these libr
 | Celery | `/celery/celery` |
 | Pydantic | `/websites/docs_pydantic_dev` |
 | Resend | `/websites/resend_com` |
+| Playwright | `/microsoft/playwright` |
 
 ## Project Structure
 
@@ -53,6 +54,10 @@ helpdesk/
 │   │   ├── routers/
 │   │   │   └── auth.py          # POST /login, POST /logout, GET /me
 │   │   └── services/            # Business logic (currently empty)
+│   ├── tests/
+│   │   ├── __init__.py
+│   │   ├── conftest.py            # Pytest fixtures: test engine, AsyncClient, seed helpers
+│   │   └── setup_db.py            # Provision test DB: create tables, seed admin + agent users
 │   ├── alembic/                 # DB migrations (users + sessions tables)
 │   ├── alembic.ini
 │   ├── pyproject.toml
@@ -85,9 +90,15 @@ helpdesk/
 │   ├── vite.config.ts           # React + Tailwind v4 plugin, @ path alias, /api proxy → :8000
 │   ├── package.json
 │   ├── tsconfig.json            # Path alias @/* = ./src/*
+│   ├── playwright.config.ts     # Playwright E2E config: chromium, webServer, auth setup
+│   ├── e2e/
+│   │   ├── auth.setup.ts        # Playwright auth setup: logs in as admin, saves storageState
+│   │   ├── global-setup.ts      # Runs test DB provisioning before test suite
+│   │   └── global-teardown.ts   # Teardown placeholder
 │   └── Dockerfile
 ├── docker-compose.yml           # PostgreSQL 17, Redis 7, backend, frontend
 ├── .env                         # Secrets (gitignored): DATABASE_URL, SECRET_KEY, API keys
+├── .env.test                    # Test environment (committed): separate helpdesk_test DB
 ├── seed.py                      # Create admin user from ADMIN_EMAIL/ADMIN_PASSWORD env vars
 └── README.md
 ```
@@ -132,7 +143,33 @@ docker compose up -d              # full stack
 ```powershell
 cd frontend && bunx --bun tsc -b --noEmit
 cd frontend && bun run lint       # oxlint
-cd backend && python -m pytest    # (when tests exist)
+```
+
+### Tests
+
+**Test database**: `helpdesk_test` — separate from dev `helpdesk` DB. Provisioned via `backend/tests/setup_db.py`.
+- Admin: `admin@test.com` / `AdminPass123!`
+- Agent: `agent@test.com` / `AgentPass123!`
+
+**Setup** (first time only):
+
+```powershell
+cd backend
+$env:PYTHONIOENCODING='utf-8'
+python tests/setup_db.py
+```
+
+**Backend unit/integration tests** (pytest):
+
+```powershell
+cd backend && python -m pytest
+```
+
+**Frontend E2E tests** (Playwright — starts backend + frontend automatically):
+
+```powershell
+cd frontend && bun run test:e2e          # headless
+cd frontend && bun run test:e2e:ui       # UI mode
 ```
 
 ## Conventions
@@ -168,5 +205,6 @@ cd backend && python -m pytest    # (when tests exist)
 - [x] TanStack Query client + Axios API client
 - [x] shadcn components: Button, Input, Card, Label, Alert
 - [x] Users page at /users (admin-only, frontend role check)
+- [x] Playwright E2E + pytest backend test infrastructure with separate test DB
 - [ ] Layout shell (full sidebar + content area)
 - [ ] Ticket pages, admin panel, knowledge base

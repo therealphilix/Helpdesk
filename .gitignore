@@ -1,6 +1,7 @@
 # Environment
 .env
 .env.*
+!.env.test
 
 # Python
 __pycache__/
@@ -40,3 +41,10 @@ backend/alembic/versions/*.pyc
 
 .kilo/*
 .kilo
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+frontend/e2e/.auth/
+backend/.env.test

@@ -1,3 +1,5 @@
+import os
+
 from pydantic import model_validator
 from pydantic_settings import BaseSettings
 
@@ -13,7 +15,11 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
 
-    model_config = {"env_file": "../.env", "env_file_encoding": "utf-8", "extra": "ignore"}
+    model_config = {
+        "env_file": os.getenv("ENV_FILE", "../.env"),
+        "env_file_encoding": "utf-8",
+        "extra": "ignore",
+    }
 
     @model_validator(mode="after")
     def _assert_secret_key(self) -> "Settings":
