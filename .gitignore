@@ -39,8 +39,7 @@ logs/
 # Alembic
 backend/alembic/versions/*.pyc
 
-.kilo/*
-.kilo
+.kilo/node_modules/
 
 # Playwright
 test-results/
@@ -48,3 +47,4 @@ playwright-report/
 playwright/.cache/
 frontend/e2e/.auth/
 backend/.env.test
+.kilo/kilo.jsonc
