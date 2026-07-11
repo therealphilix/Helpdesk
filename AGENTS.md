@@ -145,32 +145,15 @@ cd frontend && bunx --bun tsc -b --noEmit
 cd frontend && bun run lint       # oxlint
 ```
 
-### Tests
+### E2E Tests
 
-**Test database**: `helpdesk_test` — separate from dev `helpdesk` DB. Provisioned via `backend/tests/setup_db.py`.
-- Admin: `admin@test.com` / `AdminPass123!`
-- Agent: `agent@test.com` / `AgentPass123!`
+Use the **e2e-tester** subagent (`.kilo/agent/e2e-tester.md`) to write Playwright tests. It knows the app's page structure, selectors, test credentials, and Playwright patterns. Invoke it via the Task tool:
 
-**Setup** (first time only):
-
-```powershell
-cd backend
-$env:PYTHONIOENCODING='utf-8'
-python tests/setup_db.py
+```
+Task(subagent_type="general", prompt="Write Playwright E2E tests for <feature> using the e2e-tester agent conventions")
 ```
 
-**Backend unit/integration tests** (pytest):
-
-```powershell
-cd backend && python -m pytest
-```
-
-**Frontend E2E tests** (Playwright — starts backend + frontend automatically):
-
-```powershell
-cd frontend && bun run test:e2e          # headless
-cd frontend && bun run test:e2e:ui       # UI mode
-```
+Tests live in `frontend/e2e/`. The agent handles auth state, storageState overrides, form interactions, and typecheck verification automatically.
 
 ## Conventions
 
