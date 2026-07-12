@@ -22,7 +22,7 @@ router = APIRouter()
 
 
 @router.post("/login", response_model=LoginResponse)
-@limiter.limit("5/minute")
+@limiter.limit(settings.LOGIN_RATE_LIMIT)
 async def login(
     request: Request,
     body: LoginRequest,
@@ -69,15 +69,19 @@ async def login(
 
 @router.post("/logout")
 async def logout(
+    request: Request,
     response: Response,
     db: AsyncSession = Depends(get_db),
     _csrf: None = Depends(CsrfProtect()),
     user: User = Depends(get_current_user),
 ):
-    result = await db.execute(select(Session).where(Session.user_id == user.id))
-    for s in result.scalars().all():
-        await db.delete(s)
-    await db.commit()
+    session_token = request.cookies.get("session")
+    if session_token:
+        result = await db.execute(select(Session).where(Session.token == session_token))
+        session_row = result.scalar_one_or_none()
+        if session_row:
+            await db.delete(session_row)
+            await db.commit()
 
     response.delete_cookie("session")
     response.delete_cookie("csrf_token")

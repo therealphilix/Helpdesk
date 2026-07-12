@@ -6,8 +6,11 @@ setup("authenticate as admin", async ({ page }) => {
   await page.goto("/login")
   await page.fill('input[name="email"]', "admin@test.com")
   await page.fill('input[name="password"]', "AdminPass123!")
-  await page.click('button[type="submit"]')
-  await page.waitForURL("/")
+  await page.locator('button[type="submit"]').waitFor({ state: "visible" })
+  await Promise.all([
+    page.waitForURL("/"),
+    page.locator('button[type="submit"]').click(),
+  ])
 
   await expect(page.getByText("Test Admin")).toBeVisible()
 

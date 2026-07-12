@@ -1,7 +1,7 @@
 ---
 description: Writes Playwright E2E tests for the Helpdesk app
 mode: subagent
-model: deepseek-v4-pro
+model: deepseek/deepseek-v4-pro
 steps: 20
 permission:
   bash:

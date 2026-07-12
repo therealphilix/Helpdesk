@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     CORS_ORIGINS: str
     SESSION_EXPIRE_HOURS: int = 24
+    LOGIN_RATE_LIMIT: str = "5/minute"
     ENVIRONMENT: str = "development"
     RESEND_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
