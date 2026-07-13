@@ -12,7 +12,7 @@ from .core.config import settings
 from .core.csrf import OriginGuard
 from .core.database import engine
 from .core.limiter import limiter
-from .routers import auth
+from .routers import auth, users
 from .services.session_cleanup import cleanup_expired_sessions, periodic_session_cleanup
 
 
@@ -47,6 +47,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.state.limiter = limiter
 
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+app.include_router(users.router, prefix="/api/users", tags=["users"])
 
 
 @app.get("/api/health")

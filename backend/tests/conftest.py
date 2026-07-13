@@ -9,18 +9,15 @@ os.environ["REDIS_URL"] = os.getenv("TEST_REDIS_URL", "redis://localhost:6379/1"
 os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only"
 os.environ["CORS_ORIGINS"] = "http://localhost:5173"
 
-import asyncio
 from collections.abc import AsyncGenerator
 from typing import Any
 
-import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.database import Base, get_db
-from app.core.security import generate_session_token, hash_password
+from app.core.security import generate_session_token, hash_password, session_expiry
 from app.main import app
 from app.models import Session, User
 from app.models.enums import UserRole
@@ -28,32 +25,28 @@ from app.models.enums import UserRole
 TEST_DATABASE_URL = os.environ["DATABASE_URL"]
 
 
-@pytest.fixture(scope="session")
-def event_loop():
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
+def _make_engine():
+    return create_async_engine(TEST_DATABASE_URL, echo=False)
 
 
-@pytest_asyncio.fixture(scope="session")
-async def test_engine():
-    engine = create_async_engine(TEST_DATABASE_URL, echo=False)
-
+async def _ensure_tables(engine):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    yield engine
 
-    async with engine.begin() as conn:
-        for table in reversed(Base.metadata.sorted_tables):
-            await conn.execute(text(f"DELETE FROM {table.name} CASCADE"))
-
-    await engine.dispose()
+@pytest_asyncio.fixture
+async def engine():
+    eng = _make_engine()
+    async with eng.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
+    yield eng
+    await eng.dispose()
 
 
 @pytest_asyncio.fixture
-async def db_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
-    sessionmaker = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
+async def db_session(engine) -> AsyncGenerator[AsyncSession, None]:
+    sessionmaker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     async with sessionmaker() as session:
         yield session
 
@@ -103,6 +96,7 @@ async def admin_session(db_session: AsyncSession, admin_user: User) -> Session:
     session = Session(
         user_id=admin_user.id,
         token=generate_session_token(),
+        expires_at=session_expiry(),
     )
     db_session.add(session)
     await db_session.commit()
