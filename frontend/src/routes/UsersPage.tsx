@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -27,35 +28,6 @@ interface UserRow {
   role: string;
   is_active: boolean;
   created_at: string;
-}
-
-function RoleBadge({ role }: { role: string }) {
-  const isAdmin = role === "admin";
-  return (
-    <span
-      className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${
-        isAdmin
-          ? "bg-primary/10 text-primary"
-          : "bg-muted text-muted-foreground"
-      }`}
-    >
-      {role}
-    </span>
-  );
-}
-
-function StatusBadge({ active }: { active: boolean }) {
-  return (
-    <span
-      className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${
-        active
-          ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-          : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-      }`}
-    >
-      {active ? "Active" : "Inactive"}
-    </span>
-  );
 }
 
 export function UsersPage() {
@@ -135,10 +107,14 @@ function UserList() {
                     <TableCell className="font-medium">{u.name}</TableCell>
                     <TableCell>{u.email}</TableCell>
                     <TableCell>
-                      <RoleBadge role={u.role} />
+                      <Badge variant={u.role === "admin" ? "default" : "secondary"}>
+                        {u.role}
+                      </Badge>
                     </TableCell>
                     <TableCell>
-                      <StatusBadge active={u.is_active} />
+                      <Badge variant={u.is_active ? "success" : "destructive"}>
+                        {u.is_active ? "Active" : "Inactive"}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-right text-muted-foreground">
                       {new Date(u.created_at).toLocaleDateString()}
