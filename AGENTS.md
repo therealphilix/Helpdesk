@@ -168,6 +168,7 @@ Tests live in `frontend/e2e/`. The agent handles auth state, storageState overri
 - **Forms**: react-hook-form with zod resolver, validation schemas defined with `z.object()`
 - **Styling**: Tailwind CSS v4 (`@import "tailwindcss"`, no config file), theme tokens defined as CSS custom properties in `index.css`, `@tailwindcss/vite` plugin, `@` path alias → `./src`
 - **Data fetching**: Axios client at `src/api/client.ts`, TanStack Query via `QueryClientProvider` in App.tsx
+- **Testing**: backend pytest tests and frontend Playwright E2E tests MUST be written for every new feature. Use the e2e-tester subagent for Playwright tests. Tests live in `backend/tests/` and `frontend/e2e/` respectively.
 
 ## Current Implementation State
 
@@ -187,7 +188,8 @@ Tests live in `frontend/e2e/`. The agent handles auth state, storageState overri
 - [x] Auth context + protected routes (redirect to /login if unauthenticated)
 - [x] TanStack Query client + Axios API client
 - [x] shadcn components: Button, Input, Card, Label, Alert
-- [x] Users page at /users (admin-only, frontend role check)
+- [x] User management endpoints: GET /api/users (admin only)
+- [x] Users page at /users with table, skeletons, badges (admin-only, frontend + backend role check)
 - [x] Playwright E2E + pytest backend test infrastructure with separate test DB
 - [ ] Layout shell (full sidebar + content area)
 - [ ] Ticket pages, admin panel, knowledge base
