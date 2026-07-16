@@ -15,6 +15,8 @@ Full scope: `project-scope.md` | Tech stack: `tech-stack.md` | Plan: `implementa
 
 ## Tech Stack & Context7 Library IDs
 
+**When adding ANY new library, package, or framework to the project, you MUST first fetch its up-to-date documentation from Context7** using `context7_resolve-library-id` + `context7_query-docs`. Always review current API patterns, best practices, and breaking changes before writing code. Do not rely on training data or assumptions about library APIs.
+
 When writing code, fetch up-to-date documentation from Context7 using these library IDs:
 
 | Library | Context7 ID |
@@ -32,6 +34,11 @@ When writing code, fetch up-to-date documentation from Context7 using these libr
 | Pydantic | `/websites/docs_pydantic_dev` |
 | Resend | `/websites/resend_com` |
 | Playwright | `/microsoft/playwright` |
+| Vitest | `/vitest-dev/vitest` |
+| React Testing Library | `/testing-library/react-testing-library` |
+| Testing Library DOM | `/testing-library/testing-library-docs` |
+| Testing Library Jest DOM | `/testing-library/jest-dom` |
+| Testing Library User Event | `/testing-library/user-event` |
 
 ## Project Structure
 
@@ -87,7 +94,10 @@ helpdesk/
 │   │       ├── HomePage.tsx     # Authenticated dashboard with welcome Card
 │   │       ├── LoginPage.tsx    # Login form with react-hook-form + zod, shadcn Card/Input/Label/Alert/Button
 │   │       └── UsersPage.tsx    # Admin-only page: checks user.role, redirects non-admin to /
+│   │       └── __tests__/
+│   │           └── UsersPage.test.tsx  # Component tests (Vitest + RTL)
 │   ├── vite.config.ts           # React + Tailwind v4 plugin, @ path alias, /api proxy → :8000
+│   ├── vitest.config.ts         # Vitest config: jsdom, react plugin, @ alias, e2e exclusion
 │   ├── package.json
 │   ├── tsconfig.json            # Path alias @/* = ./src/*
 │   ├── playwright.config.ts     # Playwright E2E config: chromium, webServer, auth setup
@@ -145,6 +155,15 @@ cd frontend && bunx --bun tsc -b --noEmit
 cd frontend && bun run lint       # oxlint
 ```
 
+### Component Tests (Vitest + React Testing Library)
+
+```powershell
+cd frontend && bun run test        # single run
+cd frontend && bun run test:watch  # watch mode
+```
+
+Tests live in `src/routes/__tests__/` and follow the query priority: `getByRole` > `getByLabelText` > `getByText` > `querySelector([data-slot=...])` (for elements without ARIA roles).
+
 ### E2E Tests
 
 Use the **e2e-tester** subagent (`.kilo/agent/e2e-tester.md`) to write Playwright tests. It knows the app's page structure, selectors, test credentials, and Playwright patterns. Invoke it via the Task tool:
@@ -168,7 +187,7 @@ Tests live in `frontend/e2e/`. The agent handles auth state, storageState overri
 - **Forms**: react-hook-form with zod resolver, validation schemas defined with `z.object()`
 - **Styling**: Tailwind CSS v4 (`@import "tailwindcss"`, no config file), theme tokens defined as CSS custom properties in `index.css`, `@tailwindcss/vite` plugin, `@` path alias → `./src`
 - **Data fetching**: Axios client at `src/api/client.ts`, TanStack Query via `QueryClientProvider` in App.tsx
-- **Testing**: backend pytest tests and frontend Playwright E2E tests MUST be written for every new feature. Use the e2e-tester subagent for Playwright tests. Tests live in `backend/tests/` and `frontend/e2e/` respectively.
+- **Testing**: backend pytest tests and frontend Playwright E2E tests MUST be written for every new feature. Use the e2e-tester subagent for Playwright tests. Component tests use Vitest + React Testing Library with the query priority: `getByRole` > `getByLabelText` > `getByText` > test IDs as last resort. Tests live in `backend/tests/`, `frontend/e2e/`, and `frontend/src/**/__tests__/` respectively.
 
 ## Current Implementation State
 
