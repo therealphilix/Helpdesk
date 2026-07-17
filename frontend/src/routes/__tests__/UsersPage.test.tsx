@@ -117,7 +117,7 @@ describe("UserList loading state", () => {
   it("renders skeleton rows while loading", () => {
     render(<UsersPage />);
     const skeletons = document.querySelectorAll("[data-slot='skeleton']");
-    expect(skeletons.length).toBe(25);
+    expect(skeletons.length).toBe(30);
   });
 
   it("renders column headers while loading", () => {
@@ -127,6 +127,7 @@ describe("UserList loading state", () => {
     expect(screen.getByRole("columnheader", { name: "Role" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Status" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Created" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Actions" })).toBeInTheDocument();
   });
 });
 
@@ -232,6 +233,14 @@ describe("UserList data state", () => {
     const rows = within(table).getAllByRole("row");
     const dataRows = rows.slice(1); // skip header row
     expect(dataRows).toHaveLength(3);
+  });
+
+  it("renders an edit button for each user", () => {
+    render(<UsersPage />);
+    const table = screen.getByRole("table");
+    expect(within(table).getByRole("button", { name: "Edit Admin User" })).toBeInTheDocument();
+    expect(within(table).getByRole("button", { name: "Edit Support Agent" })).toBeInTheDocument();
+    expect(within(table).getByRole("button", { name: "Edit Inactive Agent" })).toBeInTheDocument();
   });
 
   it("renders user emails in the table", () => {

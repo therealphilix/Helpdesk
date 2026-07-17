@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,7 +8,7 @@ from ..core.database import get_db
 from ..core.dependencies import get_current_admin
 from ..core.security import hash_password
 from ..models import User
-from ..schemas import AdminUserOut, UserCreate
+from ..schemas import AdminUserOut, UserCreate, UserUpdate
 
 router = APIRouter()
 
@@ -35,10 +37,40 @@ async def create_user(
 
     user = User(
         email=body.email,
-        name=body.name.strip(),
+        name=body.name,
         password_hash=hash_password(body.password),
     )
     db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+
+@router.patch("/{user_id}", response_model=AdminUserOut)
+async def update_user(
+    user_id: uuid.UUID,
+    body: UserUpdate,
+    _admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if body.email != user.email:
+        existing = await db.execute(select(User).where(User.email == body.email))
+        if existing.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="A user with this email already exists",
+            )
+
+    user.name = body.name
+    user.email = body.email
+    if body.password:
+        user.password_hash = hash_password(body.password)
+
     await db.commit()
     await db.refresh(user)
     return user

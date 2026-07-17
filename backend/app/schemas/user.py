@@ -52,6 +52,34 @@ class UserCreate(BaseModel):
         return v
 
 
+class UserUpdate(BaseModel):
+    email: EmailStr
+    name: str = Field(min_length=1, max_length=255)
+    password: str | None = Field(default=None)
+
+    @field_validator("email", "name", mode="before")
+    @classmethod
+    def strip_whitespace(cls, v: str) -> str:
+        if isinstance(v, str):
+            return v.strip()
+        return v
+
+    @field_validator("password")
+    @classmethod
+    def password_strength(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        if not re.search(r"[A-Z]", v):
+            raise ValueError("Password must contain an uppercase letter")
+        if not re.search(r"[a-z]", v):
+            raise ValueError("Password must contain a lowercase letter")
+        if not re.search(r"\d", v):
+            raise ValueError("Password must contain a digit")
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', v):
+            raise ValueError("Password must contain a special character")
+        return v
+
+
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str

@@ -1,8 +1,9 @@
+import { useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { apiClient } from "../api/client";
-import { createUserSchema, type CreateUserFormData } from "../lib/schemas";
+import { editUserSchema, type EditUserFormData } from "../lib/schemas";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,12 +18,19 @@ import {
 } from "@/components/ui/dialog";
 import type { AxiosError } from "axios";
 
-interface CreateUserDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+export interface EditableUser {
+  id: string;
+  email: string;
+  name: string;
 }
 
-export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) {
+interface EditUserDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  user: EditableUser | null;
+}
+
+export function EditUserDialog({ open, onOpenChange, user }: EditUserDialogProps) {
   const queryClient = useQueryClient();
 
   const {
@@ -31,46 +39,63 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
     setError,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<CreateUserFormData>({
-    resolver: zodResolver(createUserSchema),
+  } = useForm({
+    resolver: zodResolver(editUserSchema),
     mode: "onBlur",
+    defaultValues: {
+      name: user?.name ?? "",
+      email: user?.email ?? "",
+      password: "",
+    },
   });
 
-  const createMutation = useMutation({
-    mutationFn: (data: CreateUserFormData) =>
-      apiClient.post("/users", data),
+  useEffect(() => {
+    if (user) {
+      reset({ name: user.name, email: user.email, password: "" });
+    }
+  }, [user, reset]);
+
+  const updateMutation = useMutation({
+    mutationFn: (data: EditUserFormData) => {
+      const payload: { name: string; email: string; password?: string } = {
+        name: data.name,
+        email: data.email,
+      };
+      if (data.password) {
+        payload.password = data.password;
+      }
+      return apiClient.patch(`/users/${user!.id}`, payload);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       onOpenChange(false);
-      reset();
     },
     onError: (err: AxiosError<{ detail: string }>) => {
       if (err.response?.status === 409) {
         setError("email", { message: "A user with this email already exists" });
       } else {
         setError("root", {
-          message: err.response?.data?.detail ?? "Failed to create user",
+          message: err.response?.data?.detail ?? "Failed to update user",
         });
       }
     },
   });
 
-  const onSubmit = (data: CreateUserFormData) => {
-    createMutation.mutate(data);
+  const onSubmit = (data: EditUserFormData) => {
+    updateMutation.mutate(data);
   };
 
   const handleCancel = () => {
     onOpenChange(false);
-    reset();
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create User</DialogTitle>
+          <DialogTitle>Edit User</DialogTitle>
           <DialogDescription>
-            Add a new user to the helpdesk system.
+            Update the user's information.
           </DialogDescription>
         </DialogHeader>
         <form
@@ -85,11 +110,11 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
           )}
 
           <div>
-            <Label htmlFor="name" className="mb-1.5">
+            <Label htmlFor="edit-name" className="mb-1.5">
               Name
             </Label>
             <Input
-              id="name"
+              id="edit-name"
               {...register("name")}
               aria-invalid={!!errors.name}
             />
@@ -101,11 +126,11 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
           </div>
 
           <div>
-            <Label htmlFor="email" className="mb-1.5">
+            <Label htmlFor="edit-email" className="mb-1.5">
               Email
             </Label>
             <Input
-              id="email"
+              id="edit-email"
               type="email"
               {...register("email")}
               aria-invalid={!!errors.email}
@@ -118,12 +143,13 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
           </div>
 
           <div>
-            <Label htmlFor="password" className="mb-1.5">
+            <Label htmlFor="edit-password" className="mb-1.5">
               Password
             </Label>
             <Input
-              id="password"
+              id="edit-password"
               type="password"
+              placeholder="Leave blank to keep current password"
               {...register("password")}
               aria-invalid={!!errors.password}
             />
@@ -144,7 +170,7 @@ export function CreateUserDialog({ open, onOpenChange }: CreateUserDialogProps) 
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Creating..." : "Create User"}
+              {isSubmitting ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </form>

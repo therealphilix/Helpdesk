@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
-import { CreateUserDialog, createUserSchema } from "../CreateUserDialog";
+import { CreateUserDialog } from "../CreateUserDialog";
+import { createUserSchema } from "../../lib/schemas";
 
 const { useMutationMock, useQueryClientMock, invalidateQueriesMock } = vi.hoisted(() => ({
   useMutationMock: vi.fn(),
