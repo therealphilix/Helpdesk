@@ -31,6 +31,13 @@ class UserCreate(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     password: str = Field(min_length=12)
 
+    @field_validator("email", "name", mode="before")
+    @classmethod
+    def strip_whitespace(cls, v: str) -> str:
+        if isinstance(v, str):
+            return v.strip()
+        return v
+
     @field_validator("password")
     @classmethod
     def password_strength(cls, v: str) -> str:

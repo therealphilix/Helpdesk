@@ -18,7 +18,7 @@ import {
 import type { AxiosError } from "axios";
 
 const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  email: z.string().trim().email("Invalid email address"),
   password: z
     .string()
     .min(12, "Password must be at least 12 characters")

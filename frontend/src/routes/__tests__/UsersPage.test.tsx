@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within } from "@testing-library/react";
+import { userEvent } from "@testing-library/user-event";
 import { UsersPage } from "../UsersPage";
 
 const { navigateMock } = vi.hoisted(() => ({
@@ -16,8 +17,11 @@ vi.mock("../../contexts/AuthContext", () => ({
   useAuth: vi.fn(),
 }));
 
-const { useQueryMock } = vi.hoisted(() => ({
+const { useQueryMock, useMutationMock, useQueryClientMock, invalidateQueriesMock } = vi.hoisted(() => ({
   useQueryMock: vi.fn(),
+  useMutationMock: vi.fn(),
+  useQueryClientMock: vi.fn(),
+  invalidateQueriesMock: vi.fn(),
 }));
 
 vi.mock("@tanstack/react-query", async () => {
@@ -25,6 +29,8 @@ vi.mock("@tanstack/react-query", async () => {
   return {
     ...actual,
     useQuery: (...args: unknown[]) => useQueryMock(...args),
+    useMutation: (...args: unknown[]) => useMutationMock(...args),
+    useQueryClient: () => useQueryClientMock(),
   };
 });
 
@@ -55,11 +61,27 @@ function mockUseQuery(overrides: Record<string, unknown>) {
   });
 }
 
+function mockUseMutation(overrides: Record<string, unknown> = {}) {
+  useMutationMock.mockReturnValue({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isLoading: false,
+    isError: false,
+    error: null,
+    isSuccess: false,
+    ...overrides,
+  });
+}
+
 describe("UsersPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useQueryClientMock.mockReturnValue({
+      invalidateQueries: invalidateQueriesMock,
+    });
     setAdminUser();
     mockUseQuery({});
+    mockUseMutation();
   });
 
   it("renders the Navbar", () => {
@@ -74,13 +96,22 @@ describe("UsersPage", () => {
     expect(card).toBeInTheDocument();
     expect(within(card).getByText("Users")).toBeInTheDocument();
   });
+
+  it("renders the Create User button", () => {
+    render(<UsersPage />);
+    expect(screen.getByRole("button", { name: "Create User" })).toBeInTheDocument();
+  });
 });
 
 describe("UserList loading state", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useQueryClientMock.mockReturnValue({
+      invalidateQueries: invalidateQueriesMock,
+    });
     setAdminUser();
     mockUseQuery({ isLoading: true });
+    mockUseMutation();
   });
 
   it("renders skeleton rows while loading", () => {
@@ -102,8 +133,12 @@ describe("UserList loading state", () => {
 describe("UserList error state", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useQueryClientMock.mockReturnValue({
+      invalidateQueries: invalidateQueriesMock,
+    });
     setAdminUser();
     mockUseQuery({ isError: true, error: new Error("Network Error") });
+    mockUseMutation();
   });
 
   it("shows an error alert when the request fails", () => {
@@ -123,8 +158,12 @@ describe("UserList error state", () => {
 describe("UserList empty state", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useQueryClientMock.mockReturnValue({
+      invalidateQueries: invalidateQueriesMock,
+    });
     setAdminUser();
     mockUseQuery({ data: [] });
+    mockUseMutation();
   });
 
   it("shows 'No users found.' when the user list is empty", () => {
@@ -171,8 +210,12 @@ const mockUsers = [
 describe("UserList data state", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useQueryClientMock.mockReturnValue({
+      invalidateQueries: invalidateQueriesMock,
+    });
     setAdminUser();
     mockUseQuery({ data: mockUsers });
+    mockUseMutation();
   });
 
   it("renders all users in the table", () => {
@@ -211,7 +254,8 @@ describe("UserList data state", () => {
     );
 
     expect(adminBadge).toBeTruthy();
-    expect(adminBadge!.className).toContain("bg-primary/10");
+    expect(adminBadge!.className).toContain("bg-black");
+    expect(adminBadge!.className).toContain("text-white");
     expect(agentBadges).toHaveLength(2);
     agentBadges.forEach((b) => {
       expect(b.className).toContain("bg-muted");
@@ -279,5 +323,89 @@ describe("UsersPage redirects", () => {
     });
     render(<UsersPage />);
     expect(navigateMock).toHaveBeenCalledWith({ to: "/", replace: true });
+  });
+});
+
+describe("Create User dialog", () => {
+  let mutateMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useQueryClientMock.mockReturnValue({
+      invalidateQueries: invalidateQueriesMock,
+    });
+    setAdminUser();
+    mockUseQuery({ data: mockUsers });
+    mutateMock = vi.fn();
+    mockUseMutation({ mutate: mutateMock });
+  });
+
+  const openDialog = async () => {
+    render(<UsersPage />);
+    await userEvent.click(screen.getByRole("button", { name: "Create User" }));
+  };
+
+  it("opens the dialog when clicking Create User button", async () => {
+    await openDialog();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByText("Add a new user to the helpdesk system.")).toBeInTheDocument();
+  });
+
+  it("renders name, email, and password fields in the dialog", async () => {
+    await openDialog();
+    expect(screen.getByLabelText("Name")).toBeInTheDocument();
+    expect(screen.getByLabelText("Email")).toBeInTheDocument();
+    expect(screen.getByLabelText("Password")).toBeInTheDocument();
+  });
+
+  it("closes the dialog when clicking Cancel", async () => {
+    await openDialog();
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("shows validation error for name shorter than 3 characters", async () => {
+    await openDialog();
+    const nameInput = screen.getByLabelText("Name");
+    await userEvent.type(nameInput, "ab");
+    await userEvent.tab();
+    expect(await screen.findByText("Name must be at least 3 characters")).toBeInTheDocument();
+  });
+
+  it("shows validation error for invalid email", async () => {
+    await openDialog();
+    const emailInput = screen.getByLabelText("Email");
+    await userEvent.type(emailInput, "not-an-email");
+    await userEvent.tab();
+    expect(await screen.findByText("Invalid email address")).toBeInTheDocument();
+  });
+
+  it("shows validation error for password shorter than 12 characters", async () => {
+    await openDialog();
+    const passwordInput = screen.getByLabelText("Password");
+    await userEvent.type(passwordInput, "Ab1!");
+    await userEvent.tab();
+    expect(await screen.findByText("Password must be at least 12 characters")).toBeInTheDocument();
+  });
+
+  it("shows validation error for password missing uppercase", async () => {
+    await openDialog();
+    const passwordInput = screen.getByLabelText("Password");
+    await userEvent.type(passwordInput, "abcdefghijk1!");
+    await userEvent.tab();
+    expect(await screen.findByText("Must contain an uppercase letter")).toBeInTheDocument();
+  });
+
+  it("submits valid form and calls mutate", async () => {
+    await openDialog();
+    await userEvent.type(screen.getByLabelText("Name"), "New User");
+    await userEvent.type(screen.getByLabelText("Email"), "new@helpdesk.com");
+    await userEvent.type(screen.getByLabelText("Password"), "StrongP4ssword!");
+    await userEvent.click(screen.getByRole("button", { name: "Create User" }));
+    expect(mutateMock).toHaveBeenCalledWith({
+      name: "New User",
+      email: "new@helpdesk.com",
+      password: "StrongP4ssword!",
+    });
   });
 });

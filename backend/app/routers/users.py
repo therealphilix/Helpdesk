@@ -1,11 +1,12 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.database import get_db
 from ..core.dependencies import get_current_admin
+from ..core.security import hash_password
 from ..models import User
-from ..schemas import AdminUserOut
+from ..schemas import AdminUserOut, UserCreate
 
 router = APIRouter()
 
@@ -17,3 +18,27 @@ async def list_users(
 ):
     result = await db.execute(select(User).order_by(User.created_at.desc()))
     return result.scalars().all()
+
+
+@router.post("", response_model=AdminUserOut, status_code=status.HTTP_201_CREATED)
+async def create_user(
+    body: UserCreate,
+    _admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    existing = await db.execute(select(User).where(User.email == body.email))
+    if existing.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A user with this email already exists",
+        )
+
+    user = User(
+        email=body.email,
+        name=body.name.strip(),
+        password_hash=hash_password(body.password),
+    )
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    return user
