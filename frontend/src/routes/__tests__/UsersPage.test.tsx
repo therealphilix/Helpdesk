@@ -364,6 +364,19 @@ describe("Create User dialog", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  it("closes the dialog when clicking outside", async () => {
+    await openDialog();
+    const backdrop = document.querySelector(".fixed.inset-0.bg-black\\/50");
+    await userEvent.click(backdrop!);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("closes the dialog when pressing Escape", async () => {
+    await openDialog();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
   it("shows validation error for name shorter than 3 characters", async () => {
     await openDialog();
     const nameInput = screen.getByLabelText("Name");
