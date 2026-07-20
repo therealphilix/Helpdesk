@@ -1,13 +1,14 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.database import get_db
 from ..core.dependencies import get_current_admin
 from ..core.security import hash_password
-from ..models import User
+from ..models import Session, User
+from ..models.enums import UserRole
 from ..schemas import AdminUserOut, UserCreate, UserUpdate
 
 router = APIRouter()
@@ -18,7 +19,9 @@ async def list_users(
     _admin: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(User).order_by(User.created_at.desc()))
+    result = await db.execute(
+        select(User).where(User.deleted_at.is_(None)).order_by(User.created_at.desc())
+    )
     return result.scalars().all()
 
 
@@ -74,3 +77,26 @@ async def update_user(
     await db.commit()
     await db.refresh(user)
     return user
+
+
+@router.delete("/{user_id}")
+async def delete_user(
+    user_id: uuid.UUID,
+    _admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if user.role == UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin users cannot be deleted",
+        )
+
+    await db.execute(delete(Session).where(Session.user_id == user_id))
+    user.deleted_at = func.now()
+    await db.commit()
+    return {"ok": True}

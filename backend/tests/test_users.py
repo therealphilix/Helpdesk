@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,14 +15,14 @@ async def _create_user(
     email: str,
     name: str,
     role: UserRole,
-    is_active: bool = True,
+    deleted_at: datetime | None = None,
 ) -> User:
     user = User(
         email=email,
         name=name,
         password_hash=hash_password("SomePass123!"),
         role=role,
-        is_active=is_active,
+        deleted_at=deleted_at,
     )
     db_session.add(user)
     await db_session.commit()
@@ -38,7 +40,8 @@ async def test_admin_can_list_users(
     assert len(data) >= 1
     assert data[0]["email"] == "admin@test.com"
     assert data[0]["role"] == "admin"
-    assert "is_active" in data[0]
+    assert "deleted_at" in data[0]
+    assert data[0]["deleted_at"] is None
 
 
 async def test_users_includes_agent(
@@ -53,21 +56,19 @@ async def test_users_includes_agent(
     assert "agent2@test.com" in emails
 
 
-async def test_users_includes_inactive(
+async def test_users_excludes_deleted(
     db_session: AsyncSession, auth_client: AsyncClient
 ):
     await _create_user(
-        db_session, "inactive@test.com", "Inactive User", UserRole.AGENT, is_active=False
+        db_session, "deleted@test.com", "Deleted User", UserRole.AGENT,
+        deleted_at=datetime.now(timezone.utc),
     )
 
     resp = await auth_client.get("/api/users")
     assert resp.status_code == 200
     data = resp.json()
-    inactive = next(
-        (u for u in data if u["email"] == "inactive@test.com"), None
-    )
-    assert inactive is not None
-    assert inactive["is_active"] is False
+    emails = {u["email"] for u in data}
+    assert "deleted@test.com" not in emails
 
 
 async def test_agent_cannot_list_users(

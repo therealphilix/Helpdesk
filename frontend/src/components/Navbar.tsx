@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "../contexts/AuthContext";
+import { UserRole } from "../lib/roles";
 import { Button } from "@/components/ui/button";
 
 export function Navbar() {
@@ -17,7 +18,7 @@ export function Navbar() {
     <nav className="bg-card border-b border-border px-6 py-3 flex items-center justify-between">
       <div className="flex items-center gap-6">
         <span className="font-semibold text-lg">Helpdesk</span>
-        {user.role === "admin" && (
+        {user.role === UserRole.ADMIN && (
           <Link to="/users" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             Users
           </Link>

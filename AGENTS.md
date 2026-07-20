@@ -178,6 +178,14 @@ Tests live in `frontend/e2e/`. The agent handles auth state, storageState overri
 
 - **Python**: async SQLAlchemy 2.0 (Mapped, mapped_column), type hints everywhere, FastAPI dependency injection for DB sessions and auth, bcrypt for password hashing
 - **TypeScript**: strict mode, no default exports in new code (use named exports), React 19 + TypeScript 6
+- **Role checks**: use the `UserRole` enum from `src/lib/roles.ts` for all role comparisons. Never use bare string literals `"admin"` or `"agent"`. The enum mirrors the backend `UserRole` (Python).
+  ```typescript
+  import { UserRole } from "../lib/roles";
+  // Good:
+  if (user.role === UserRole.ADMIN) { /* ... */ }
+  // Bad:
+  if (user.role === "admin") { /* ... */ }
+  ```
 - **Auth**: database-backed sessions via cookies (httponly, samesite=lax), cookie name `session`, `/auth/me` restores session on mount
 - **API**: RESTful, all routes prefixed with `/api/`, auth routes at `/api/auth/*`
 - **CORS**: origins from `CORS_ORIGINS` config, credentials enabled

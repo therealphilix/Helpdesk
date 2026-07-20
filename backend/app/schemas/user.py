@@ -18,7 +18,7 @@ class UserOut(BaseModel):
 
 
 class AdminUserOut(UserOut):
-    is_active: bool
+    deleted_at: datetime | None
 
 
 class LoginResponse(BaseModel):

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { UserRole } from "../lib/roles";
 import { Navbar } from "../components/Navbar";
 import {
   Card,
@@ -23,7 +24,7 @@ export function UsersPage() {
     return null;
   }
 
-  if (user.role !== "admin") {
+  if (user.role !== UserRole.ADMIN) {
     navigate({ to: "/", replace: true });
     return null;
   }

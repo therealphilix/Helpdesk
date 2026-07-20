@@ -35,6 +35,7 @@ vi.mock("@tanstack/react-query", async () => {
 });
 
 import { useAuth } from "../../contexts/AuthContext";
+import { UserRole } from "../../lib/roles";
 
 function setAdminUser() {
   vi.mocked(useAuth).mockReturnValue({
@@ -42,7 +43,7 @@ function setAdminUser() {
       id: "admin-1",
       email: "myadmin@helpdesk.com",
       name: "My Admin",
-      role: "admin",
+      role: UserRole.ADMIN,
       created_at: "2025-01-01T00:00:00Z",
     },
     loading: false,
@@ -125,7 +126,6 @@ describe("UserList loading state", () => {
     expect(screen.getByRole("columnheader", { name: "Name" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Email" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Role" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Status" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Created" })).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Actions" })).toBeInTheDocument();
   });
@@ -186,25 +186,15 @@ const mockUsers = [
     id: "1",
     email: "admin@helpdesk.com",
     name: "Admin User",
-    role: "admin",
-    is_active: true,
+    role: UserRole.ADMIN,
     created_at: "2025-03-15T10:30:00Z",
   },
   {
     id: "2",
     email: "agent@helpdesk.com",
     name: "Support Agent",
-    role: "agent",
-    is_active: true,
+    role: UserRole.AGENT,
     created_at: "2025-06-01T08:00:00Z",
-  },
-  {
-    id: "3",
-    email: "inactive@helpdesk.com",
-    name: "Inactive Agent",
-    role: "agent",
-    is_active: false,
-    created_at: "2025-01-10T12:00:00Z",
   },
 ];
 
@@ -224,7 +214,6 @@ describe("UserList data state", () => {
     const table = screen.getByRole("table");
     expect(within(table).getByText("Admin User")).toBeInTheDocument();
     expect(within(table).getByText("Support Agent")).toBeInTheDocument();
-    expect(within(table).getByText("Inactive Agent")).toBeInTheDocument();
   });
 
   it("renders correct number of data rows", () => {
@@ -232,7 +221,7 @@ describe("UserList data state", () => {
     const table = screen.getByRole("table");
     const rows = within(table).getAllByRole("row");
     const dataRows = rows.slice(1); // skip header row
-    expect(dataRows).toHaveLength(3);
+    expect(dataRows).toHaveLength(2);
   });
 
   it("renders an edit button for each user", () => {
@@ -240,7 +229,13 @@ describe("UserList data state", () => {
     const table = screen.getByRole("table");
     expect(within(table).getByRole("button", { name: "Edit Admin User" })).toBeInTheDocument();
     expect(within(table).getByRole("button", { name: "Edit Support Agent" })).toBeInTheDocument();
-    expect(within(table).getByRole("button", { name: "Edit Inactive Agent" })).toBeInTheDocument();
+  });
+
+  it("renders delete buttons for non-admin users only", () => {
+    render(<UsersPage />);
+    const table = screen.getByRole("table");
+    expect(within(table).queryByRole("button", { name: "Delete Admin User" })).not.toBeInTheDocument();
+    expect(within(table).getByRole("button", { name: "Delete Support Agent" })).toBeInTheDocument();
   });
 
   it("renders user emails in the table", () => {
@@ -248,7 +243,6 @@ describe("UserList data state", () => {
     const table = screen.getByRole("table");
     expect(within(table).getByText("admin@helpdesk.com")).toBeInTheDocument();
     expect(within(table).getByText("agent@helpdesk.com")).toBeInTheDocument();
-    expect(within(table).getByText("inactive@helpdesk.com")).toBeInTheDocument();
   });
 
   it("renders role badges with correct variants", () => {
@@ -256,34 +250,19 @@ describe("UserList data state", () => {
     const badges = document.querySelectorAll("[data-slot='badge']");
 
     const adminBadge = Array.from(badges).find(
-      (b) => b.textContent === "admin"
+      (b) => b.textContent === UserRole.ADMIN
     );
     const agentBadges = Array.from(badges).filter(
-      (b) => b.textContent === "agent"
+      (b) => b.textContent === UserRole.AGENT
     );
 
     expect(adminBadge).toBeTruthy();
     expect(adminBadge!.className).toContain("bg-black");
     expect(adminBadge!.className).toContain("text-white");
-    expect(agentBadges).toHaveLength(2);
+    expect(agentBadges).toHaveLength(1);
     agentBadges.forEach((b) => {
       expect(b.className).toContain("bg-muted");
     });
-  });
-
-  it("renders status badges with Active/Inactive text", () => {
-    render(<UsersPage />);
-    const badges = document.querySelectorAll("[data-slot='badge']");
-
-    const activeBadges = Array.from(badges).filter(
-      (b) => b.textContent === "Active"
-    );
-    const inactiveBadges = Array.from(badges).filter(
-      (b) => b.textContent === "Inactive"
-    );
-
-    expect(activeBadges).toHaveLength(2);
-    expect(inactiveBadges).toHaveLength(1);
   });
 
   it("renders a date in the first user row", () => {
@@ -292,7 +271,7 @@ describe("UserList data state", () => {
     const rows = within(table).getAllByRole("row");
     const firstDataRow = rows[1];
     const cells = within(firstDataRow).getAllByRole("cell");
-    const dateCell = cells[4];
+    const dateCell = cells[3];
     expect(dateCell.textContent).toBeTruthy();
     expect(dateCell.textContent).toMatch(/\d/);
   });
@@ -323,7 +302,7 @@ describe("UsersPage redirects", () => {
         id: "2",
         email: "agent@helpdesk.com",
         name: "Agent",
-        role: "agent",
+        role: UserRole.AGENT,
         created_at: "2025-01-01T00:00:00Z",
       },
       loading: false,

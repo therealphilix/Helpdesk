@@ -7,12 +7,13 @@ import {
   type ReactNode,
 } from "react";
 import { apiClient } from "../api/client";
+import type { UserRole } from "../lib/roles";
 
 export interface User {
   id: string;
   email: string;
   name: string;
-  role: string;
+  role: UserRole;
   created_at: string;
 }
 
