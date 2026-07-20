@@ -81,6 +81,7 @@ async def _create_tables() -> None:
     from app.models import Base
 
     async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
     print("[setup_db] Tables created.")
 

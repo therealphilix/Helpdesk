@@ -22,7 +22,9 @@ test.describe("authenticated admin", () => {
 
   test("admin can access /users page and see heading", async ({ page }) => {
     await page.goto("/users");
-    await expect(page.getByRole("heading", { name: "Users" })).toBeVisible();
+    await expect(
+      page.locator("[data-slot='card-title']")
+    ).toContainText("Users");
   });
 });
 
