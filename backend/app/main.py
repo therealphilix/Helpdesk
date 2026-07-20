@@ -12,7 +12,7 @@ from .core.config import settings
 from .core.csrf import OriginGuard
 from .core.database import engine
 from .core.limiter import limiter
-from .routers import auth, users
+from .routers import auth, users, webhooks
 from .services.session_cleanup import cleanup_expired_sessions, periodic_session_cleanup
 
 
@@ -48,6 +48,7 @@ app.state.limiter = limiter
 
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])
+app.include_router(webhooks.router, prefix="/api/webhooks", tags=["webhooks"])
 
 
 @app.get("/api/health")

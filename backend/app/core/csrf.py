@@ -39,6 +39,10 @@ class OriginGuard:
             await self.app(scope, receive, send)
             return
 
+        if scope["path"].startswith("/api/webhooks/"):
+            await self.app(scope, receive, send)
+            return
+
         headers = MutableHeaders(scope=scope)
         origin = headers.get("origin")
         referer = headers.get("referer")

@@ -1,13 +1,31 @@
 from datetime import datetime, timezone
 
-from fastapi import Cookie, Depends, HTTPException, status
+from fastapi import Cookie, Depends, Header, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
+from ..core.config import settings
 from ..core.database import get_db
 from ..models import Session, User
 from ..models.enums import UserRole
+
+
+async def verify_webhook_secret(
+    x_webhook_secret: str | None = Header(default=None, alias="X-Webhook-Secret"),
+) -> None:
+    if not settings.WEBHOOK_SECRET:
+        return
+    if not x_webhook_secret:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing webhook secret",
+        )
+    if x_webhook_secret != settings.WEBHOOK_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid webhook secret",
+        )
 
 
 async def get_current_user(

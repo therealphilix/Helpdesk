@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
+    WEBHOOK_SECRET: str = ""
 
     model_config = {
         "env_file": os.getenv("ENV_FILE", "../.env"),
