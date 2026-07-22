@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within } from "@testing-library/react";
+import { userEvent } from "@testing-library/user-event";
 import { TicketsPage } from "../TicketsPage";
 
 const { navigateMock } = vi.hoisted(() => ({
@@ -285,5 +286,45 @@ describe("TicketsPage agent access", () => {
     render(<TicketsPage />);
     expect(screen.getByRole("link", { name: "Tickets" })).toBeInTheDocument();
     expect(navigateMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("TicketsTable sorting", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setAdminUser();
+    mockUseQuery({ data: mockTickets });
+  });
+
+  it("sends default sort params to the API", () => {
+    render(<TicketsPage />);
+    expect(useQueryMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["tickets", { sort_by: "created", sort_dir: "desc" }],
+      })
+    );
+  });
+
+  it("toggles sort direction when clicking a column header", async () => {
+    render(<TicketsPage />);
+    const statusHeader = screen.getByRole("columnheader", { name: /Status/ });
+    await userEvent.click(statusHeader);
+    expect(useQueryMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["tickets", { sort_by: "status", sort_dir: "asc" }],
+      })
+    );
+  });
+
+  it("toggles to descending on second click of the same header", async () => {
+    render(<TicketsPage />);
+    const statusHeader = screen.getByRole("columnheader", { name: /Status/ });
+    await userEvent.click(statusHeader);
+    await userEvent.click(statusHeader);
+    expect(useQueryMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["tickets", { sort_by: "status", sort_dir: "desc" }],
+      })
+    );
   });
 });
