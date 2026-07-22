@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { TicketFiltersBar, type TicketFilters } from "./TicketFilters"
 
 interface TicketRow {
   id: string
@@ -120,14 +121,28 @@ export function TicketsTable() {
     { id: "created", desc: true },
   ])
 
+  const [filters, setFilters] = useState<TicketFilters>({
+    search: "",
+    status: "",
+    category: "",
+  })
+
   const sortBy = sorting[0]?.id ?? "created"
   const sortDir = sorting[0]?.desc ? "desc" : "asc"
 
+  const params: Record<string, string> = {
+    sort_by: sortBy,
+    sort_dir: sortDir,
+  }
+  if (filters.search) params.search = filters.search
+  if (filters.status) params.status = filters.status
+  if (filters.category) params.category = filters.category
+
   const { data: tickets, isLoading, isError, error } = useQuery<TicketRow[]>({
-    queryKey: ["tickets", { sort_by: sortBy, sort_dir: sortDir }],
+    queryKey: ["tickets", { sort_by: sortBy, sort_dir: sortDir, search: filters.search, status: filters.status, category: filters.category }],
     queryFn: () =>
       apiClient
-        .get<TicketRow[]>("/tickets", { params: { sort_by: sortBy, sort_dir: sortDir } })
+        .get<TicketRow[]>("/tickets", { params })
         .then((res) => res.data),
   })
 
@@ -143,91 +158,110 @@ export function TicketsTable() {
     enableMultiSort: false,
   })
 
+  const filterBar = (
+    <TicketFiltersBar
+      filters={filters}
+      onSearchChange={(search) => setFilters((p) => ({ ...p, search }))}
+      onStatusChange={(status) => setFilters((p) => ({ ...p, status }))}
+      onCategoryChange={(category) => setFilters((p) => ({ ...p, category }))}
+      onClear={() => setFilters({ search: "", status: "", category: "" })}
+    />
+  )
+
   if (isLoading) {
     return (
+      <>
+        {filterBar}
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <TableRow key={i}>
+                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-64" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-14 rounded-md" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-24 rounded-md" /></TableCell>
+                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </>
+    )
+  }
+
+  if (isError) {
+    return (
+      <>
+        {filterBar}
+        <Alert variant="destructive">
+          <AlertDescription>
+            {error instanceof Error ? error.message : "Failed to load tickets."}
+          </AlertDescription>
+        </Alert>
+      </>
+    )
+  }
+
+  if (!tickets) {
+    return <>{filterBar}</>
+  }
+
+  return (
+    <>
+      {filterBar}
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
-                  <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
+                <TableHead
+                  key={header.id}
+                  className={header.column.getCanSort() ? "cursor-pointer select-none" : ""}
+                  onClick={header.column.getToggleSortingHandler()}
+                >
+                  <span>
+                    {flexRender(header.column.columnDef.header, header.getContext())}
+                    {header.column.getCanSort() && (
+                      <SortIcon sorted={header.column.getIsSorted()} />
+                    )}
+                  </span>
                 </TableHead>
               ))}
             </TableRow>
           ))}
         </TableHeader>
         <TableBody>
-          {Array.from({ length: 5 }).map((_, i) => (
-            <TableRow key={i}>
-              <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-64" /></TableCell>
-              <TableCell><Skeleton className="h-5 w-14 rounded-md" /></TableCell>
-              <TableCell><Skeleton className="h-5 w-24 rounded-md" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-              <TableCell className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
+          {table.getRowModel().rows.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={columns.length} className="text-center text-muted-foreground">
+                No tickets found.
+              </TableCell>
             </TableRow>
-          ))}
+          ) : (
+            table.getRowModel().rows.map((row) => (
+              <TableRow key={row.id}>
+                {row.getVisibleCells().map((cell) => (
+                  <TableCell key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          )}
         </TableBody>
       </Table>
-    )
-  }
-
-  if (isError) {
-    return (
-      <Alert variant="destructive">
-        <AlertDescription>
-          {error instanceof Error ? error.message : "Failed to load tickets."}
-        </AlertDescription>
-      </Alert>
-    )
-  }
-
-  if (!tickets) {
-    return null
-  }
-
-  return (
-    <Table>
-      <TableHeader>
-        {table.getHeaderGroups().map((headerGroup) => (
-          <TableRow key={headerGroup.id}>
-            {headerGroup.headers.map((header) => (
-              <TableHead
-                key={header.id}
-                className={header.column.getCanSort() ? "cursor-pointer select-none" : ""}
-                onClick={header.column.getToggleSortingHandler()}
-              >
-                <span>
-                  {flexRender(header.column.columnDef.header, header.getContext())}
-                  {header.column.getCanSort() && (
-                    <SortIcon sorted={header.column.getIsSorted()} />
-                  )}
-                </span>
-              </TableHead>
-            ))}
-          </TableRow>
-        ))}
-      </TableHeader>
-      <TableBody>
-        {table.getRowModel().rows.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={columns.length} className="text-center text-muted-foreground">
-              No tickets found.
-            </TableCell>
-          </TableRow>
-        ) : (
-          table.getRowModel().rows.map((row) => (
-            <TableRow key={row.id}>
-              {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))
-        )}
-      </TableBody>
-    </Table>
+    </>
   )
 }

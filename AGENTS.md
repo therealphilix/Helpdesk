@@ -83,8 +83,13 @@ helpdesk/
 │   │   │   └── ui/              # shadcn/ui components (built on @base-ui/react primitives)
 │   │   │       ├── button.tsx   # Variants: default, outline, secondary, ghost, destructive, link
 │   │   │       ├── input.tsx    # Wraps @base-ui/react input
+│   │   │       ├── select.tsx   # Select, SelectTrigger, SelectValue, SelectContent, SelectItem
 │   │   │       ├── card.tsx     # Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter
 │   │   │       ├── label.tsx    # Form label (native <label> with Tailwind)
+│   │   │       ├── badge.tsx    # Badge with variant colors
+│   │   │       ├── table.tsx    # Table, TableHeader, TableBody, TableRow, TableHead, TableCell
+│   │   │       ├── skeleton.tsx # Loading skeleton placeholder
+│   │   │       ├── dialog.tsx   # Modal dialog with portal
 │   │   │       └── alert.tsx    # Alert, AlertTitle, AlertDescription (variants: default, destructive)
 │   │   ├── contexts/
 │   │   │   └── AuthContext.tsx  # AuthProvider, useAuth hook (user, loading, login, logout)
@@ -194,7 +199,7 @@ Tests live in `frontend/e2e/`.
 - **API**: RESTful, all routes prefixed with `/api/`, auth routes at `/api/auth/*`
 - **CORS**: origins from `CORS_ORIGINS` config, credentials enabled
 - **Environment**: secrets in `.env`, never committed
-- **UI Components**: shadcn/ui components MUST be used instead of raw Tailwind divs. Components live in `frontend/src/components/ui/` and are built on `@base-ui/react` primitives (not Radix). Use `@/components/ui/...` imports. Never recreate a component with `<div>` + Tailwind if a shadcn equivalent exists.
+- **UI Components**: shadcn/ui components MUST be used for all interactive UI primitives. Components live in `frontend/src/components/ui/` and are built on `@base-ui/react` primitives (not Radix). Import them from `@/components/ui/...`. Only fall back to native HTML elements (e.g., `<select>`, `<textarea>`) when no shadcn component exists for that purpose. Never recreate a component with `<div>` + Tailwind if a shadcn equivalent exists. When a new shadcn component is needed, create it in `frontend/src/components/ui/` following the existing patterns (wrapping the corresponding `@base-ui/react` primitive with Tailwind styling).
 - **Routing**: TanStack Router with flat tree defined in `router.tsx` — `createRootRoute()` + `createRoute({ getParentRoute, path, component })`. Route components in `src/routes/`.
 - **Forms**: react-hook-form with zod resolver, validation schemas defined with `z.object()`
 - **Styling**: Tailwind CSS v4 (`@import "tailwindcss"`, no config file), theme tokens defined as CSS custom properties in `index.css`, `@tailwindcss/vite` plugin, `@` path alias → `./src`

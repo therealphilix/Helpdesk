@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { TicketsPage } from "../TicketsPage";
 
@@ -289,6 +289,14 @@ describe("TicketsPage agent access", () => {
   });
 });
 
+const defaultQueryKey = {
+  category: "",
+  search: "",
+  sort_by: "created",
+  sort_dir: "desc",
+  status: "",
+};
+
 describe("TicketsTable sorting", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -299,9 +307,7 @@ describe("TicketsTable sorting", () => {
   it("sends default sort params to the API", () => {
     render(<TicketsPage />);
     expect(useQueryMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        queryKey: ["tickets", { sort_by: "created", sort_dir: "desc" }],
-      })
+      expect.objectContaining({ queryKey: ["tickets", defaultQueryKey] })
     );
   });
 
@@ -311,7 +317,7 @@ describe("TicketsTable sorting", () => {
     await userEvent.click(statusHeader);
     expect(useQueryMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        queryKey: ["tickets", { sort_by: "status", sort_dir: "asc" }],
+        queryKey: ["tickets", { ...defaultQueryKey, sort_by: "status", sort_dir: "asc" }],
       })
     );
   });
@@ -323,8 +329,77 @@ describe("TicketsTable sorting", () => {
     await userEvent.click(statusHeader);
     expect(useQueryMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        queryKey: ["tickets", { sort_by: "status", sort_dir: "desc" }],
+        queryKey: ["tickets", { ...defaultQueryKey, sort_by: "status", sort_dir: "desc" }],
       })
     );
+  });
+});
+
+describe("TicketsTable filtering", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setAdminUser();
+    mockUseQuery({ data: mockTickets });
+  });
+
+  it("renders search input, status select, and category select", () => {
+    render(<TicketsPage />);
+    expect(screen.getByRole("textbox", { name: /Search/ })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: /Status/ })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: /Category/ })).toBeInTheDocument();
+  });
+
+  async function selectOption(trigger: HTMLElement, optionText: string) {
+    await userEvent.click(trigger);
+    await waitFor(() => {
+      expect(screen.getByRole("option", { name: optionText })).toBeInTheDocument();
+    });
+    await userEvent.click(screen.getByRole("option", { name: optionText }));
+  }
+
+  it("passes status filter to the API", async () => {
+    render(<TicketsPage />);
+    const statusTrigger = screen.getByRole("combobox", { name: /Status/ });
+    await selectOption(statusTrigger, "Resolved");
+    expect(useQueryMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["tickets", { ...defaultQueryKey, sort_by: "created", sort_dir: "desc", status: "resolved" }],
+      })
+    );
+  });
+
+  it("passes category filter to the API", async () => {
+    render(<TicketsPage />);
+    const categoryTrigger = screen.getByRole("combobox", { name: /Category/ });
+    await selectOption(categoryTrigger, "Refund");
+    expect(useQueryMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ["tickets", { ...defaultQueryKey, sort_by: "created", sort_dir: "desc", category: "refund request" }],
+      })
+    );
+  });
+
+  it("shows Clear button when a filter is active", async () => {
+    render(<TicketsPage />);
+    const statusTrigger = screen.getByRole("combobox", { name: /Status/ });
+    await selectOption(statusTrigger, "Open");
+    expect(screen.getByRole("button", { name: "Clear" })).toBeInTheDocument();
+  });
+
+  it("clears all filters when Clear is clicked", async () => {
+    render(<TicketsPage />);
+    const statusTrigger = screen.getByRole("combobox", { name: /Status/ });
+    await selectOption(statusTrigger, "Resolved");
+    const clearButton = screen.getByRole("button", { name: "Clear" });
+    await userEvent.click(clearButton);
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: "Clear" })).not.toBeInTheDocument();
+    });
+    expect(statusTrigger).toHaveTextContent("All");
+  });
+
+  it("does not show Clear button when no filters are active", () => {
+    render(<TicketsPage />);
+    expect(screen.queryByRole("button", { name: "Clear" })).not.toBeInTheDocument();
   });
 });
