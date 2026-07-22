@@ -36,7 +36,7 @@ export default defineConfig({
   webServer: [
   {
     command:
-      'cmd /c "cd /d ..\\backend && set "DATABASE_URL=postgresql+asyncpg://helpdesk:helpdesk@localhost:5432/helpdesk_test" && set "ENVIRONMENT=testing" && set "SECRET_KEY=test-secret-key-for-e2e-testing-only" && set "REDIS_URL=redis://localhost:6379/1" && set "CORS_ORIGINS=http://localhost:5173" && set "LOGIN_RATE_LIMIT=100/minute" && set "PYTHONIOENCODING=utf-8" && fastapi dev app/main.py"',port: 8000,
+      'cmd /c "cd /d ..\\backend && set "DATABASE_URL=postgresql+asyncpg://helpdesk:helpdesk@localhost:5432/helpdesk_test" && set "ENVIRONMENT=testing" && set "SECRET_KEY=test-secret-key-for-e2e-testing-only" && set "REDIS_URL=redis://localhost:6379/1" && set "CORS_ORIGINS=http://localhost:5173" && set "LOGIN_RATE_LIMIT=100/minute" && set "ENV_FILE=skip_dotenv" && set "PYTHONIOENCODING=utf-8" && fastapi dev app/main.py"',port: 8000,
       reuseExistingServer: false,
       timeout: 30_000,
     },

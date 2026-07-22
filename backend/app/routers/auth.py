@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..core.config import settings
 from ..core.csrf import CsrfProtect
 from ..core.database import get_db
-from ..core.dependencies import get_current_admin, get_current_user
+from ..core.dependencies import get_current_user
 from ..core.limiter import limiter
 from ..core.security import (
     generate_csrf_token,
@@ -90,5 +90,5 @@ async def logout(
 
 @router.get("/me", response_model=UserOut)
 async def me(
-    user: User = Depends(get_current_admin)):
+    user: User = Depends(get_current_user)):
     return user

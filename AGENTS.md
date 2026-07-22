@@ -155,24 +155,28 @@ cd frontend && bunx --bun tsc -b --noEmit
 cd frontend && bun run lint       # oxlint
 ```
 
-### Component Tests (Vitest + React Testing Library)
+### Component Tests (Vitest + React Testing Library) — **Primary test strategy**
 
 ```powershell
 cd frontend && bun run test        # single run
 cd frontend && bun run test:watch  # watch mode
 ```
 
+**Component tests are the default for all UI behavior.** Every new page or component should have accompanying component tests covering: rendering, loading state, error state, empty state, data state, and redirects/auth gating. Mock `useAuth`, `useQuery`, `useMutation`, and `useNavigate` following the patterns in `UsersPage.test.tsx` and `TicketsPage.test.tsx`.
+
 Tests live in `src/routes/__tests__/` and follow the query priority: `getByRole` > `getByLabelText` > `getByText` > `querySelector([data-slot=...])` (for elements without ARIA roles).
 
-### E2E Tests
+### E2E Tests (Playwright) — **Use sparingly, only for full-stack integration**
 
-Use the **e2e-tester** subagent (`.kilo/agent/e2e-tester.md`) to write Playwright tests. It knows the app's page structure, selectors, test credentials, and Playwright patterns. Invoke it via the Task tool:
+E2E tests are reserved for flows that span the entire stack end-to-end (e.g., webhook → database → API → frontend rendering). Do NOT write E2E tests for UI-only assertions like page headings, empty states, loading skeletons, navbar links, or redirect logic — these belong in component tests.
+
+When an E2E test is genuinely needed, use the **e2e-tester** subagent (`.kilo/agent/e2e-tester.md`):
 
 ```
 Task(subagent_type="general", prompt="Write Playwright E2E tests for <feature> using the e2e-tester agent conventions")
 ```
 
-Tests live in `frontend/e2e/`. The agent handles auth state, storageState overrides, form interactions, and typecheck verification automatically.
+Tests live in `frontend/e2e/`.
 
 ## Conventions
 
@@ -195,7 +199,7 @@ Tests live in `frontend/e2e/`. The agent handles auth state, storageState overri
 - **Forms**: react-hook-form with zod resolver, validation schemas defined with `z.object()`
 - **Styling**: Tailwind CSS v4 (`@import "tailwindcss"`, no config file), theme tokens defined as CSS custom properties in `index.css`, `@tailwindcss/vite` plugin, `@` path alias → `./src`
 - **Data fetching**: Axios client at `src/api/client.ts`, TanStack Query via `QueryClientProvider` in App.tsx
-- **Testing**: backend pytest tests and frontend Playwright E2E tests MUST be written for every new feature. Use the e2e-tester subagent for Playwright tests. Component tests use Vitest + React Testing Library with the query priority: `getByRole` > `getByLabelText` > `getByText` > test IDs as last resort. Tests live in `backend/tests/`, `frontend/e2e/`, and `frontend/src/**/__tests__/` respectively.
+- **Testing**: Prefer component tests (Vitest + RTL) for all UI behavior. Use E2E tests (Playwright) only for full-stack integration flows. Write backend pytest tests for all new endpoints. Backend tests live in `backend/tests/`, component tests in `frontend/src/**/__tests__/`, E2E tests in `frontend/e2e/`.
 
 ## Current Implementation State
 
