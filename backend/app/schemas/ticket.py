@@ -128,6 +128,8 @@ class TicketPaginatedOut(BaseModel):
 
 class TicketUpdate(BaseModel):
     assigned_to: uuid.UUID | None = None
+    status: TicketStatus | None = None
+    category: TicketCategory | None = None
 
 
 class AgentOut(BaseModel):

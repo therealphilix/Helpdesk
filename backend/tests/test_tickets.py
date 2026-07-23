@@ -236,6 +236,87 @@ async def test_update_ticket_unassign(
     assert data["assignee_name"] is None
 
 
+async def test_update_ticket_status(
+    db_session: AsyncSession, auth_client: AsyncClient
+):
+    ticket = await _create_ticket(db_session, subject="Status change")
+
+    resp = await auth_client.patch(
+        f"/api/tickets/{ticket.id}",
+        json={"status": "resolved"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "resolved"
+
+
+async def test_update_ticket_category(
+    db_session: AsyncSession, auth_client: AsyncClient
+):
+    ticket = await _create_ticket(db_session, subject="Category change")
+
+    resp = await auth_client.patch(
+        f"/api/tickets/{ticket.id}",
+        json={"category": "technical question"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["category"] == "technical question"
+
+
+async def test_update_ticket_clear_category(
+    db_session: AsyncSession, auth_client: AsyncClient
+):
+    ticket = await _create_ticket(db_session, subject="Clear category")
+    ticket.category = "general question"
+    await db_session.commit()
+
+    resp = await auth_client.patch(
+        f"/api/tickets/{ticket.id}",
+        json={"category": None},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["category"] is None
+
+
+async def test_update_ticket_multiple_fields(
+    db_session: AsyncSession, auth_client: AsyncClient, agent_user
+):
+    ticket = await _create_ticket(db_session, subject="Multi update")
+
+    resp = await auth_client.patch(
+        f"/api/tickets/{ticket.id}",
+        json={
+            "status": "resolved",
+            "category": "technical question",
+            "assigned_to": str(agent_user.id),
+        },
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "resolved"
+    assert data["category"] == "technical question"
+    assert str(data["assigned_to"]) == str(agent_user.id)
+
+
+async def test_update_ticket_empty_body_no_change(
+    db_session: AsyncSession, auth_client: AsyncClient, agent_user
+):
+    ticket = await _create_ticket(db_session, subject="No change")
+    ticket.assigned_to = agent_user.id
+    ticket.status = "resolved"
+    ticket.category = "technical question"
+    await db_session.commit()
+
+    resp = await auth_client.patch(
+        f"/api/tickets/{ticket.id}",
+        json={},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "resolved"
+    assert data["category"] == "technical question"
+    assert str(data["assigned_to"]) == str(agent_user.id)
+
+
 async def test_update_ticket_invalid_user(
     db_session: AsyncSession, auth_client: AsyncClient
 ):

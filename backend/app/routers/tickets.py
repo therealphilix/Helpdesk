@@ -117,14 +117,23 @@ async def update_ticket(
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
 
-    if body.assigned_to is not None:
-        user_result = await db.execute(
-            select(User).where(User.id == body.assigned_to, User.deleted_at.is_(None))
-        )
-        if not user_result.scalar_one_or_none():
-            raise HTTPException(status_code=400, detail="Assigned user not found")
+    update_data = body.model_dump(exclude_unset=True)
 
-    ticket.assigned_to = body.assigned_to
+    if "assigned_to" in update_data:
+        if body.assigned_to is not None:
+            user_result = await db.execute(
+                select(User).where(User.id == body.assigned_to, User.deleted_at.is_(None))
+            )
+            if not user_result.scalar_one_or_none():
+                raise HTTPException(status_code=400, detail="Assigned user not found")
+        ticket.assigned_to = body.assigned_to
+
+    if "status" in update_data:
+        ticket.status = body.status
+
+    if "category" in update_data:
+        ticket.category = body.category
+
     await db.commit()
     await db.refresh(ticket)
     return ticket

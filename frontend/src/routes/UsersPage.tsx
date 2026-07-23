@@ -32,7 +32,7 @@ export function UsersPage() {
   return (
     <div>
       <Navbar />
-      <main className="p-8 max-w-6xl mx-auto">
+      <main className="p-6 max-w-6xl mx-auto">
         <UserList />
       </main>
     </div>

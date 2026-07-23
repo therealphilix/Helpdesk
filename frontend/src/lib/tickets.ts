@@ -19,3 +19,15 @@ export const statusVariant: Record<string, "default" | "secondary" | "success"> 
   resolved: "success",
   closed: "secondary",
 }
+
+export const statusOptions: { value: string; label: string }[] = [
+  { value: "open", label: "Open" },
+  { value: "resolved", label: "Resolved" },
+  { value: "closed", label: "Closed" },
+]
+
+export const categoryOptions: { value: string; label: string }[] = [
+  { value: "general question", label: "General Question" },
+  { value: "technical question", label: "Technical Question" },
+  { value: "refund request", label: "Refund Request" },
+]

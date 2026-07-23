@@ -33,7 +33,7 @@ export function HomePage() {
   return (
     <div>
       <Navbar />
-      <main className="p-8">
+      <main className="p-6">
         <Card>
           <CardHeader>
             <CardTitle>Welcome, {user.name}</CardTitle>

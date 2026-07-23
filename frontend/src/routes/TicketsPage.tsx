@@ -22,7 +22,7 @@ export function TicketsPage() {
   return (
     <div>
       <Navbar />
-      <main className="p-8 max-w-6xl mx-auto">
+      <main className="p-6 max-w-6xl mx-auto">
         <Card className="border-0 shadow-none">
           <CardHeader>
             <CardTitle className="text-3xl">Tickets</CardTitle>

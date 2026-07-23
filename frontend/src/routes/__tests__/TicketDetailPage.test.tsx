@@ -145,23 +145,32 @@ describe("TicketDetailPage rendering", () => {
     expect(screen.getByText("alice.student@university.edu")).toBeInTheDocument()
   })
 
-  it("renders the status badge", () => {
+  it("renders the status badge in the header", () => {
     render(<TicketDetailPage />)
     const badge = screen.getByText("open")
     expect(badge).toBeInTheDocument()
     expect(badge.closest("[data-slot='badge']")).toBeInTheDocument()
   })
 
-  it("renders the category badge", () => {
+  it("renders the status select with current value", () => {
     render(<TicketDetailPage />)
-    const badge = screen.getByText("technical question")
-    expect(badge.closest("[data-slot='badge']")).toBeInTheDocument()
+    const trigger = screen.getByRole("combobox", { name: "Status" })
+    expect(trigger).toBeInTheDocument()
+    expect(trigger).toHaveTextContent("Open")
   })
 
-  it("renders em dash when category is null", () => {
+  it("renders the category select with current value", () => {
+    render(<TicketDetailPage />)
+    const trigger = screen.getByRole("combobox", { name: "Category" })
+    expect(trigger).toBeInTheDocument()
+    expect(trigger).toHaveTextContent("Technical Question")
+  })
+
+  it("renders None in the category select when category is null", () => {
     mockQueries({ data: { ...mockTicket, category: null } })
     render(<TicketDetailPage />)
-    expect(screen.getByText("—")).toBeInTheDocument()
+    const trigger = screen.getByRole("combobox", { name: "Category" })
+    expect(trigger).toHaveTextContent("None")
   })
 
   it("renders the assigned agent value in the select", () => {
@@ -272,7 +281,7 @@ describe("TicketDetailPage agent access", () => {
   })
 })
 
-describe("TicketDetailPage assignment", () => {
+describe("TicketDetailPage mutations", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     setAdminUser()
@@ -287,6 +296,37 @@ describe("TicketDetailPage assignment", () => {
     await userEvent.click(screen.getByRole("option", { name: optionText }))
   }
 
+  it("calls update mutation when changing status", async () => {
+    const mutateMock = vi.fn()
+    useMutationMock.mockReturnValue({ mutate: mutateMock, isPending: false })
+
+    render(<TicketDetailPage />)
+    const trigger = screen.getByRole("combobox", { name: "Status" })
+    await selectOption(trigger, "Resolved")
+    expect(mutateMock).toHaveBeenCalledWith({ status: "resolved" })
+  })
+
+  it("calls update mutation when changing category", async () => {
+    const mutateMock = vi.fn()
+    useMutationMock.mockReturnValue({ mutate: mutateMock, isPending: false })
+
+    render(<TicketDetailPage />)
+    const trigger = screen.getByRole("combobox", { name: "Category" })
+    await selectOption(trigger, "Refund Request")
+    expect(mutateMock).toHaveBeenCalledWith({ category: "refund request" })
+  })
+
+  it("calls update mutation with null when selecting None category", async () => {
+    const mutateMock = vi.fn()
+    useMutationMock.mockReturnValue({ mutate: mutateMock, isPending: false })
+
+    mockQueries({ data: { ...mockTicket, category: "general question" } })
+    render(<TicketDetailPage />)
+    const trigger = screen.getByRole("combobox", { name: "Category" })
+    await selectOption(trigger, "None")
+    expect(mutateMock).toHaveBeenCalledWith({ category: null })
+  })
+
   it("renders the assignee select with agent options", async () => {
     render(<TicketDetailPage />)
     const trigger = screen.getByRole("combobox", { name: "Assigned To" })
@@ -297,17 +337,17 @@ describe("TicketDetailPage assignment", () => {
     })
   })
 
-  it("calls assign mutation when selecting a different agent", async () => {
+  it("calls update mutation when selecting a different agent", async () => {
     const mutateMock = vi.fn()
     useMutationMock.mockReturnValue({ mutate: mutateMock, isPending: false })
 
     render(<TicketDetailPage />)
     const trigger = screen.getByRole("combobox", { name: "Assigned To" })
     await selectOption(trigger, "Jane Agent")
-    expect(mutateMock).toHaveBeenCalledWith("agent-2")
+    expect(mutateMock).toHaveBeenCalledWith({ assigned_to: "agent-2" })
   })
 
-  it("calls assign mutation with null when selecting Unassigned", async () => {
+  it("calls update mutation with null when selecting Unassigned", async () => {
     const mutateMock = vi.fn()
     useMutationMock.mockReturnValue({ mutate: mutateMock, isPending: false })
 
@@ -315,14 +355,16 @@ describe("TicketDetailPage assignment", () => {
     render(<TicketDetailPage />)
     const trigger = screen.getByRole("combobox", { name: "Assigned To" })
     await selectOption(trigger, "Unassigned")
-    expect(mutateMock).toHaveBeenCalledWith(null)
+    expect(mutateMock).toHaveBeenCalledWith({ assigned_to: null })
   })
 
-  it("disables the select while mutation is pending", () => {
+  it("disables selects while mutation is pending", () => {
     useMutationMock.mockReturnValue({ mutate: vi.fn(), isPending: true })
     render(<TicketDetailPage />)
-    const trigger = screen.getByRole("combobox", { name: "Assigned To" })
-    expect(trigger).toBeDisabled()
+    const triggers = screen.getAllByRole("combobox")
+    for (const trigger of triggers) {
+      expect(trigger).toBeDisabled()
+    }
   })
 
   it("invalidates ticket query on mutation success", () => {
