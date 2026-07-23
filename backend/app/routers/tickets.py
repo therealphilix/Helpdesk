@@ -1,14 +1,16 @@
-from fastapi import APIRouter, Depends, Query
+import uuid
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import asc, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from ..core.database import get_db
 from ..core.dependencies import get_current_user
-from ..models.enums import TicketCategory, TicketStatus
+from ..models.enums import TicketCategory, TicketStatus, UserRole
 from ..models.ticket import Ticket
 from ..models.user import User
-from ..schemas.ticket import TicketListOut, TicketPaginatedOut
+from ..schemas.ticket import AgentOut, TicketDetailOut, TicketPaginatedOut, TicketUpdate
 
 router = APIRouter()
 
@@ -73,3 +75,56 @@ async def list_tickets(
     items = list(result.scalars().all())
 
     return TicketPaginatedOut(items=items, total=total)
+
+
+@router.get("/agents", response_model=list[AgentOut])
+async def list_agents(
+    _user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(User)
+        .where(User.role == UserRole.AGENT, User.deleted_at.is_(None))
+        .order_by(User.name)
+    )
+    return result.scalars().all()
+
+
+@router.get("/{ticket_id}", response_model=TicketDetailOut)
+async def get_ticket(
+    ticket_id: uuid.UUID,
+    _user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    query = select(Ticket).options(joinedload(Ticket.assignee)).where(Ticket.id == ticket_id)
+    result = await db.execute(query)
+    ticket = result.scalars().first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    return ticket
+
+
+@router.patch("/{ticket_id}", response_model=TicketDetailOut)
+async def update_ticket(
+    ticket_id: uuid.UUID,
+    body: TicketUpdate,
+    _user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    query = select(Ticket).options(joinedload(Ticket.assignee)).where(Ticket.id == ticket_id)
+    result = await db.execute(query)
+    ticket = result.scalars().first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+
+    if body.assigned_to is not None:
+        user_result = await db.execute(
+            select(User).where(User.id == body.assigned_to, User.deleted_at.is_(None))
+        )
+        if not user_result.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="Assigned user not found")
+
+    ticket.assigned_to = body.assigned_to
+    await db.commit()
+    await db.refresh(ticket)
+    return ticket

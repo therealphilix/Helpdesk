@@ -80,6 +80,59 @@ class TicketListOut(BaseModel):
         return data
 
 
+class TicketDetailOut(BaseModel):
+    id: uuid.UUID
+    sender_email: str
+    sender_name: str | None
+    subject: str
+    body_text: str
+    body_html: str | None
+    status: TicketStatus
+    category: TicketCategory | None
+    assigned_to: uuid.UUID | None
+    assignee_name: str | None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+    @model_validator(mode="before")
+    @classmethod
+    def extract_assignee_name(cls, data: object) -> object:
+        if hasattr(data, "assignee"):
+            name = data.assignee.name if data.assignee is not None else None
+            if isinstance(data, dict):
+                data["assignee_name"] = name
+            else:
+                return {
+                    "id": data.id,
+                    "sender_email": data.sender_email,
+                    "sender_name": data.sender_name,
+                    "subject": data.subject,
+                    "body_text": data.body_text,
+                    "body_html": data.body_html,
+                    "status": data.status,
+                    "category": data.category,
+                    "assigned_to": data.assigned_to,
+                    "created_at": data.created_at,
+                    "updated_at": data.updated_at,
+                    "assignee_name": name,
+                }
+        return data
+
+
 class TicketPaginatedOut(BaseModel):
     items: list[TicketListOut]
     total: int
+
+
+class TicketUpdate(BaseModel):
+    assigned_to: uuid.UUID | None = None
+
+
+class AgentOut(BaseModel):
+    id: uuid.UUID
+    name: str
+    email: str
+
+    model_config = {"from_attributes": True}

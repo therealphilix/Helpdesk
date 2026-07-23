@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import { useNavigate } from "@tanstack/react-router"
 import {
   type SortingState,
   type PaginationState,
@@ -10,7 +11,7 @@ import {
 import { useQuery } from "@tanstack/react-query"
 import { type AxiosError } from "axios"
 import { apiClient } from "../api/client"
-import { TicketStatus } from "../lib/tickets"
+import { TicketStatus, statusVariant } from "../lib/tickets"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -50,12 +51,6 @@ function normalizeResponse(data: unknown): PaginatedResponse {
     return data as PaginatedResponse
   }
   return { items: [], total: 0 }
-}
-
-const statusVariant: Record<string, "default" | "secondary" | "success"> = {
-  open: "default",
-  resolved: "success",
-  closed: "secondary",
 }
 
 const COLUMN_TO_SORT_KEY: Record<string, string> = {
@@ -144,6 +139,7 @@ function SortIcon({ sorted }: { sorted: false | "asc" | "desc" }) {
 }
 
 export function TicketsTable() {
+  const navigate = useNavigate()
   const [sorting, setSorting] = useState<SortingState>([
     { id: "created", desc: true },
   ])
@@ -317,7 +313,18 @@ export function TicketsTable() {
             </TableRow>
           ) : (
             table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id}>
+              <TableRow
+                key={row.id}
+                className="cursor-pointer hover:bg-muted/50"
+                tabIndex={0}
+                onClick={() => navigate({ to: `/tickets/${row.original.id}` })}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault()
+                    navigate({ to: `/tickets/${row.original.id}` })
+                  }
+                }}
+              >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

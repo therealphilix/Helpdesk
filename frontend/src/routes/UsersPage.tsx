@@ -44,9 +44,9 @@ function UserList() {
 
   return (
     <Card className="border-0 shadow-none">
-      <CardHeader className="flex-row items-start justify-between">
+      <CardHeader className="flex-row items-center justify-between">
         <div className="flex flex-col gap-1.5">
-          <CardTitle>Users</CardTitle>
+          <CardTitle className="text-3xl">Users</CardTitle>
           <CardDescription>
             Manage user accounts and their roles.
           </CardDescription>

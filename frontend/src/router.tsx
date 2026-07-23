@@ -5,6 +5,7 @@ import {
 } from "@tanstack/react-router";
 import { HomePage } from "./routes/HomePage";
 import { LoginPage } from "./routes/LoginPage";
+import { TicketDetailPage } from "./routes/TicketDetailPage";
 import { TicketsPage } from "./routes/TicketsPage";
 import { UsersPage } from "./routes/UsersPage";
 
@@ -28,13 +29,19 @@ const ticketsRoute = createRoute({
   component: TicketsPage,
 });
 
+const ticketDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/tickets/$ticketId",
+  component: TicketDetailPage,
+});
+
 const usersRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/users",
   component: UsersPage,
 });
 
-const routeTree = rootRoute.addChildren([indexRoute, loginRoute, ticketsRoute, usersRoute]);
+const routeTree = rootRoute.addChildren([indexRoute, loginRoute, ticketsRoute, ticketDetailRoute, usersRoute]);
 
 export const router = createRouter({
   routeTree,

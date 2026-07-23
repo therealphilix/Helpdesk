@@ -25,7 +25,7 @@ export function TicketsPage() {
       <main className="p-8 max-w-6xl mx-auto">
         <Card className="border-0 shadow-none">
           <CardHeader>
-            <CardTitle>Tickets</CardTitle>
+            <CardTitle className="text-3xl">Tickets</CardTitle>
             <CardDescription>
               View and manage support tickets.
             </CardDescription>

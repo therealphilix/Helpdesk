@@ -13,3 +13,9 @@ export const TicketCategory = {
 } as const;
 
 export type TicketCategory = (typeof TicketCategory)[keyof typeof TicketCategory];
+
+export const statusVariant: Record<string, "default" | "secondary" | "success"> = {
+  open: "default",
+  resolved: "success",
+  closed: "secondary",
+}
