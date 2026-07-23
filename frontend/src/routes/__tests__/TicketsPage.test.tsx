@@ -72,6 +72,10 @@ function mockUseQuery(overrides: Record<string, unknown>) {
   });
 }
 
+function withTotal(data: unknown[], total?: number): { items: unknown[]; total: number } {
+  return { items: data, total: total ?? data.length }
+}
+
 describe("TicketsPage rendering", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -147,7 +151,7 @@ describe("TicketsTable empty state", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setAdminUser();
-    mockUseQuery({ data: [] });
+    mockUseQuery({ data: withTotal([]) });
   });
 
   it("shows 'No tickets found.' when the ticket list is empty", () => {
@@ -193,7 +197,7 @@ describe("TicketsTable data state", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setAdminUser();
-    mockUseQuery({ data: mockTickets });
+    mockUseQuery({ data: withTotal(mockTickets) });
   });
 
   it("renders all tickets in the table", () => {
@@ -279,7 +283,7 @@ describe("TicketsPage agent access", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setAgentUser();
-    mockUseQuery({ data: mockTickets });
+    mockUseQuery({ data: withTotal(mockTickets) });
   });
 
   it("renders for agent user without redirecting", () => {
@@ -291,8 +295,10 @@ describe("TicketsPage agent access", () => {
 
 const defaultQueryKey = {
   category: "",
+  limit: 10,
+  offset: 0,
   search: "",
-  sort_by: "created",
+  sort_by: "created_at",
   sort_dir: "desc",
   status: "",
 };
@@ -301,7 +307,7 @@ describe("TicketsTable sorting", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setAdminUser();
-    mockUseQuery({ data: mockTickets });
+    mockUseQuery({ data: withTotal(mockTickets) });
   });
 
   it("sends default sort params to the API", () => {
@@ -339,7 +345,7 @@ describe("TicketsTable filtering", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setAdminUser();
-    mockUseQuery({ data: mockTickets });
+    mockUseQuery({ data: withTotal(mockTickets) });
   });
 
   it("renders search input, status select, and category select", () => {
@@ -363,7 +369,7 @@ describe("TicketsTable filtering", () => {
     await selectOption(statusTrigger, "Resolved");
     expect(useQueryMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        queryKey: ["tickets", { ...defaultQueryKey, sort_by: "created", sort_dir: "desc", status: "resolved" }],
+        queryKey: ["tickets", { ...defaultQueryKey, sort_by: "created_at", sort_dir: "desc", status: "resolved" }],
       })
     );
   });
@@ -374,7 +380,7 @@ describe("TicketsTable filtering", () => {
     await selectOption(categoryTrigger, "Refund");
     expect(useQueryMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        queryKey: ["tickets", { ...defaultQueryKey, sort_by: "created", sort_dir: "desc", category: "refund request" }],
+        queryKey: ["tickets", { ...defaultQueryKey, sort_by: "created_at", sort_dir: "desc", category: "refund request" }],
       })
     );
   });

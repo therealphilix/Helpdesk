@@ -78,3 +78,8 @@ class TicketListOut(BaseModel):
                     "assignee_name": name,
                 }
         return data
+
+
+class TicketPaginatedOut(BaseModel):
+    items: list[TicketListOut]
+    total: int

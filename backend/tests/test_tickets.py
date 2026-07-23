@@ -35,10 +35,12 @@ async def test_list_tickets_returns_newest_first(
     resp = await auth_client.get("/api/tickets")
     assert resp.status_code == 200
     data = resp.json()
-    assert isinstance(data, list)
-    assert len(data) >= 2
-    assert data[0]["subject"] == "Second ticket"
-    assert data[1]["subject"] == "First ticket"
+    assert "items" in data
+    assert "total" in data
+    assert data["total"] >= 2
+    items = data["items"]
+    assert items[0]["subject"] == "Second ticket"
+    assert items[1]["subject"] == "First ticket"
 
 
 async def test_list_tickets_includes_all_fields(
@@ -55,19 +57,21 @@ async def test_list_tickets_includes_all_fields(
     resp = await auth_client.get("/api/tickets")
     assert resp.status_code == 200
     data = resp.json()
-    assert len(data) == 1
-    assert data[0]["sender_email"] == "jane@test.com"
-    assert data[0]["sender_name"] == "Jane Doe"
-    assert data[0]["subject"] == "Need help with login"
-    assert data[0]["status"] == "open"
-    assert data[0]["category"] is None
-    assert data[0]["assigned_to"] is None
-    assert data[0]["assignee_name"] is None
-    assert "body_text" not in data[0]
-    assert "body_html" not in data[0]
-    assert "id" in data[0]
-    assert "created_at" in data[0]
-    assert "updated_at" in data[0]
+    assert data["total"] == 1
+    items = data["items"]
+    assert len(items) == 1
+    assert items[0]["sender_email"] == "jane@test.com"
+    assert items[0]["sender_name"] == "Jane Doe"
+    assert items[0]["subject"] == "Need help with login"
+    assert items[0]["status"] == "open"
+    assert items[0]["category"] is None
+    assert items[0]["assigned_to"] is None
+    assert items[0]["assignee_name"] is None
+    assert "body_text" not in items[0]
+    assert "body_html" not in items[0]
+    assert "id" in items[0]
+    assert "created_at" in items[0]
+    assert "updated_at" in items[0]
 
 
 async def test_list_tickets_shows_assignee_name(
@@ -80,7 +84,8 @@ async def test_list_tickets_shows_assignee_name(
     resp = await auth_client.get("/api/tickets")
     assert resp.status_code == 200
     data = resp.json()
-    assigned = [t for t in data if t["id"] == str(ticket.id)]
+    items = data["items"]
+    assigned = [t for t in items if t["id"] == str(ticket.id)]
     assert len(assigned) == 1
     assert str(assigned[0]["assigned_to"]) == str(agent_user.id)
     assert assigned[0]["assignee_name"] == agent_user.name
@@ -106,7 +111,8 @@ async def test_agent_can_list_tickets(
     resp = await client.get("/api/tickets")
     assert resp.status_code == 200
     data = resp.json()
-    assert len(data) == 1
+    assert data["total"] == 1
+    assert len(data["items"]) == 1
 
 
 async def test_unauthenticated_cannot_list_tickets(client: AsyncClient):
@@ -117,4 +123,5 @@ async def test_unauthenticated_cannot_list_tickets(client: AsyncClient):
 async def test_list_tickets_empty(db_session: AsyncSession, auth_client: AsyncClient):
     resp = await auth_client.get("/api/tickets")
     assert resp.status_code == 200
-    assert resp.json() == []
+    data = resp.json()
+    assert data == {"items": [], "total": 0}

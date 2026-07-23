@@ -1,12 +1,14 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   type SortingState,
+  type PaginationState,
   createColumnHelper,
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table"
 import { useQuery } from "@tanstack/react-query"
+import { type AxiosError } from "axios"
 import { apiClient } from "../api/client"
 import { TicketStatus } from "../lib/tickets"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -21,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { TicketFiltersBar, type TicketFilters } from "./TicketFilters"
+import { TicketPagination } from "./TicketPagination"
 
 interface TicketRow {
   id: string
@@ -34,10 +37,34 @@ interface TicketRow {
   created_at: string
 }
 
+interface PaginatedResponse {
+  items: TicketRow[]
+  total: number
+}
+
+function normalizeResponse(data: unknown): PaginatedResponse {
+  if (Array.isArray(data)) {
+    throw new Error("API returned an unexpected flat array instead of a paginated response.")
+  }
+  if (data && typeof data === "object" && "items" in data && "total" in data) {
+    return data as PaginatedResponse
+  }
+  return { items: [], total: 0 }
+}
+
 const statusVariant: Record<string, "default" | "secondary" | "success"> = {
   open: "default",
   resolved: "success",
   closed: "secondary",
+}
+
+const COLUMN_TO_SORT_KEY: Record<string, string> = {
+  sender: "sender_name",
+  subject: "subject",
+  status: "status",
+  category: "category",
+  assignee: "assignee_name",
+  created: "created_at",
 }
 
 const columnHelper = createColumnHelper<TicketRow>()
@@ -127,34 +154,73 @@ export function TicketsTable() {
     category: "",
   })
 
-  const sortBy = sorting[0]?.id ?? "created"
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  })
+
+  useEffect(() => {
+    setPagination((prev) => (prev.pageIndex === 0 ? prev : { ...prev, pageIndex: 0 }))
+  }, [filters.search, filters.status, filters.category])
+
+  const columnId = sorting[0]?.id ?? "created"
+  const sortBy = COLUMN_TO_SORT_KEY[columnId] ?? "created_at"
   const sortDir = sorting[0]?.desc ? "desc" : "asc"
 
   const params: Record<string, string> = {
     sort_by: sortBy,
     sort_dir: sortDir,
+    limit: String(pagination.pageSize),
+    offset: String(pagination.pageIndex * pagination.pageSize),
   }
   if (filters.search) params.search = filters.search
   if (filters.status) params.status = filters.status
   if (filters.category) params.category = filters.category
 
-  const { data: tickets, isLoading, isError, error } = useQuery<TicketRow[]>({
-    queryKey: ["tickets", { sort_by: sortBy, sort_dir: sortDir, search: filters.search, status: filters.status, category: filters.category }],
+  const { data: paginatedData, isLoading, isError, error } = useQuery<PaginatedResponse>({
+    queryKey: [
+      "tickets",
+      {
+        sort_by: sortBy,
+        sort_dir: sortDir,
+        search: filters.search,
+        status: filters.status,
+        category: filters.category,
+        limit: pagination.pageSize,
+        offset: pagination.pageIndex * pagination.pageSize,
+      },
+    ],
     queryFn: () =>
       apiClient
-        .get<TicketRow[]>("/tickets", { params })
-        .then((res) => res.data),
+        .get("/tickets", { params })
+        .then((res) => normalizeResponse(res.data))
+        .catch((err: AxiosError<{ detail: unknown }>) => {
+          const detail = err.response?.data?.detail
+          if (Array.isArray(detail) && detail.length > 0) {
+            const first = detail[0] as Record<string, unknown>
+            const loc = (first.loc as string[])?.join(".") ?? "query"
+            throw new Error(`${loc}: ${first.msg}`)
+          }
+          if (typeof detail === "string") {
+            throw new Error(detail)
+          }
+          throw err
+        }),
   })
 
-  const data = useMemo(() => tickets ?? [], [tickets])
+  const data = useMemo(() => paginatedData?.items ?? [], [paginatedData])
+  const total = paginatedData?.total ?? 0
 
   const table = useReactTable({
     data,
     columns,
-    state: { sorting },
+    state: { sorting, pagination },
     onSortingChange: setSorting,
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     manualSorting: true,
+    manualPagination: true,
+    pageCount: Math.ceil(total / pagination.pageSize) || 1,
     enableMultiSort: false,
   })
 
@@ -214,7 +280,7 @@ export function TicketsTable() {
     )
   }
 
-  if (!tickets) {
+  if (!paginatedData) {
     return <>{filterBar}</>
   }
 
@@ -262,6 +328,13 @@ export function TicketsTable() {
           )}
         </TableBody>
       </Table>
+      <TicketPagination
+        pageIndex={pagination.pageIndex}
+        pageSize={pagination.pageSize}
+        total={total}
+        onPageChange={(pageIndex) => setPagination((prev) => ({ ...prev, pageIndex }))}
+        onPageSizeChange={(pageSize) => setPagination({ pageIndex: 0, pageSize })}
+      />
     </>
   )
 }
