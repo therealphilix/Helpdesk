@@ -25,3 +25,6 @@ class Ticket(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     assignee: Mapped["User | None"] = relationship("User")
+    replies: Mapped[list["TicketReply"]] = relationship(
+        "TicketReply", back_populates="ticket", order_by="TicketReply.created_at"
+    )

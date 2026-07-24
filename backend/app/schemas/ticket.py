@@ -4,7 +4,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
-from ..models.enums import TicketCategory, TicketStatus
+from ..models.enums import SenderType, TicketCategory, TicketStatus
+from .reply import ReplyOut
 
 _SUBJECT_PREFIX_RE = re.compile(
     r"^(?:(?:RE|FWD?|AW|WG|SV|VS)\s*:\s*)+",
@@ -91,6 +92,7 @@ class TicketDetailOut(BaseModel):
     category: TicketCategory | None
     assigned_to: uuid.UUID | None
     assignee_name: str | None
+    replies: list[ReplyOut]
     created_at: datetime
     updated_at: datetime
 
@@ -114,6 +116,7 @@ class TicketDetailOut(BaseModel):
                     "status": data.status,
                     "category": data.category,
                     "assigned_to": data.assigned_to,
+                    "replies": data.replies,
                     "created_at": data.created_at,
                     "updated_at": data.updated_at,
                     "assignee_name": name,

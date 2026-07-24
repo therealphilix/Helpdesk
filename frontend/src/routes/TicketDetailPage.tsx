@@ -4,6 +4,8 @@ import { type AxiosError } from "axios"
 import { ArrowLeft, Loader2 } from "lucide-react"
 import { useAuth } from "../contexts/AuthContext"
 import { Navbar } from "../components/Navbar"
+import { ReplyThread } from "../components/ReplyThread"
+import { ReplyForm } from "../components/ReplyForm"
 import { apiClient } from "../api/client"
 import {
   TicketStatus,
@@ -12,6 +14,7 @@ import {
   statusOptions,
   categoryOptions,
 } from "../lib/tickets"
+import type { ReplyOut } from "../lib/tickets"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -36,6 +39,7 @@ interface TicketDetail {
   category: TicketCategory | null
   assigned_to: string | null
   assignee_name: string | null
+  replies: ReplyOut[]
   created_at: string
   updated_at: string
 }
@@ -171,6 +175,14 @@ export function TicketDetailPage() {
                       {ticket.body_text}
                     </div>
                   )}
+
+                  <ReplyThread
+                    replies={ticket.replies}
+                    senderName={ticket.sender_name}
+                    senderEmail={ticket.sender_email}
+                  />
+
+                  <ReplyForm ticketId={ticket.id} />
                 </div>
 
                 <div className="md:w-64 flex flex-col gap-4">

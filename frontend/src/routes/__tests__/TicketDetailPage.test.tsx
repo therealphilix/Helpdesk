@@ -85,6 +85,14 @@ const mockTicket = {
   category: "technical question",
   assigned_to: "user-1",
   assignee_name: "Test Admin",
+  replies: [] as {
+    id: string
+    sender_type: string
+    author_id: string | null
+    author_name: string | null
+    body_text: string
+    created_at: string
+  }[],
   created_at: "2025-07-20T10:00:00Z",
   updated_at: "2025-07-20T12:00:00Z",
 }
@@ -375,6 +383,162 @@ describe("TicketDetailPage mutations", () => {
     onSuccess()
     expect(queryClientInvalidateMock).toHaveBeenCalledWith({
       queryKey: ["ticket", "ticket-1"],
+    })
+  })
+})
+
+describe("TicketDetailPage replies", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setAdminUser()
+    mockQueries()
+  })
+
+  it("renders the reply form", () => {
+    useMutationMock.mockReturnValue({ mutate: vi.fn(), isPending: false })
+    render(<TicketDetailPage />)
+    expect(screen.getByPlaceholderText("Type your reply...")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /send/i })).toBeInTheDocument()
+  })
+
+  it("renders reply thread when there are replies", () => {
+    useMutationMock.mockReturnValue({ mutate: vi.fn(), isPending: false })
+    mockQueries({
+      data: {
+        ...mockTicket,
+        replies: [
+          {
+            id: "reply-1",
+            sender_type: "agent",
+            author_id: "admin-1",
+            author_name: "Jane Agent",
+            body_text: "I'll look into this.",
+            created_at: "2025-07-20T11:00:00Z",
+          },
+          {
+            id: "reply-2",
+            sender_type: "customer",
+            author_id: null,
+            author_name: null,
+            body_text: "Thank you!",
+            created_at: "2025-07-20T11:30:00Z",
+          },
+        ],
+      },
+    })
+    render(<TicketDetailPage />)
+    expect(screen.getByText("Replies")).toBeInTheDocument()
+    expect(screen.getByText("I'll look into this.")).toBeInTheDocument()
+    expect(screen.getByText("Thank you!")).toBeInTheDocument()
+    expect(screen.getByText("Jane Agent")).toBeInTheDocument()
+  })
+
+  it("shows sender name for customer replies", () => {
+    useMutationMock.mockReturnValue({ mutate: vi.fn(), isPending: false })
+    mockQueries({
+      data: {
+        ...mockTicket,
+        replies: [
+          {
+            id: "reply-1",
+            sender_type: "customer",
+            author_id: null,
+            author_name: null,
+            body_text: "Can you help?",
+            created_at: "2025-07-20T11:00:00Z",
+          },
+        ],
+      },
+    })
+    render(<TicketDetailPage />)
+    const nameElements = screen.getAllByText("Alice Student")
+    expect(nameElements.length).toBe(2)
+    expect(screen.getByText("Can you help?")).toBeInTheDocument()
+  })
+
+  it("does not render replies heading when there are no replies", () => {
+    useMutationMock.mockReturnValue({ mutate: vi.fn(), isPending: false })
+    render(<TicketDetailPage />)
+    expect(screen.queryByText("Replies")).not.toBeInTheDocument()
+  })
+
+  it("send button is disabled when textarea is empty", () => {
+    useMutationMock.mockReturnValue({ mutate: vi.fn(), isPending: false })
+    render(<TicketDetailPage />)
+    const sendButton = screen.getByRole("button", { name: /send/i })
+    expect(sendButton).toBeDisabled()
+  })
+
+  it("calls create reply on submit", async () => {
+    const updateMutate = vi.fn()
+    const replyMutate = vi.fn()
+    let callIndex = 0
+    useMutationMock.mockImplementation(() => {
+      callIndex++
+      if (callIndex === 1) {
+        return { mutate: updateMutate, isPending: false, isError: false, error: null }
+      }
+      return { mutate: replyMutate, isPending: false, isError: false, error: null }
+    })
+
+    render(<TicketDetailPage />)
+    const textarea = screen.getByPlaceholderText("Type your reply...")
+    await userEvent.type(textarea, "Helping with the issue.")
+
+    const sendButton = screen.getByRole("button", { name: /send/i })
+    expect(sendButton).not.toBeDisabled()
+    await userEvent.click(sendButton)
+
+    expect(replyMutate).toHaveBeenCalledWith({ body_text: "Helping with the issue." })
+    expect(updateMutate).not.toHaveBeenCalled()
+  })
+
+  it("disables textarea and button while mutation is pending", () => {
+    let callIndex = 0
+    useMutationMock.mockImplementation(() => {
+      callIndex++
+      if (callIndex === 2) {
+        return { mutate: vi.fn(), isPending: true, isError: false, error: null }
+      }
+      return { mutate: vi.fn(), isPending: false, isError: false, error: null }
+    })
+
+    render(<TicketDetailPage />)
+    const textarea = screen.getByPlaceholderText("Type your reply...")
+    expect(textarea).toBeDisabled()
+    expect(screen.getByRole("button", { name: /send/i })).toBeDisabled()
+  })
+
+  it("shows reply error message", () => {
+    let callIndex = 0
+    useMutationMock.mockImplementation(() => {
+      callIndex++
+      if (callIndex === 2) {
+        return { mutate: vi.fn(), isPending: false, isError: true, error: new Error("Failed to send reply.") }
+      }
+      return { mutate: vi.fn(), isPending: false, isError: false, error: null }
+    })
+
+    render(<TicketDetailPage />)
+    expect(screen.getByText("Failed to send reply.")).toBeInTheDocument()
+  })
+
+  it("clears reply text and invalidates queries on mutation success", () => {
+    useMutationMock.mockReturnValue({ mutate: vi.fn(), isPending: false })
+
+    render(<TicketDetailPage />)
+    const textarea = screen.getByPlaceholderText("Type your reply...") as HTMLTextAreaElement
+    expect(textarea.value).toBe("")
+
+    const replyOnSuccess = useMutationMock.mock.calls[1]?.[0]?.onSuccess
+    expect(replyOnSuccess).toBeDefined()
+    replyOnSuccess()
+
+    expect(queryClientInvalidateMock).toHaveBeenCalledWith({
+      queryKey: ["ticket", "ticket-1"],
+    })
+    expect(queryClientInvalidateMock).toHaveBeenCalledWith({
+      queryKey: ["replies", "ticket-1"],
     })
   })
 })

@@ -16,3 +16,8 @@ class TicketCategory(str, enum.Enum):
     GENERAL_QUESTION = "general question"
     TECHNICAL_QUESTION = "technical question"
     REFUND_REQUEST = "refund request"
+
+
+class SenderType(str, enum.Enum):
+    AGENT = "agent"
+    CUSTOMER = "customer"

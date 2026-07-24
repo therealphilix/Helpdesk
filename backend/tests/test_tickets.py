@@ -4,7 +4,8 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.ticket import Ticket
-from app.models.enums import TicketStatus
+from app.models.ticket_reply import TicketReply
+from app.models.enums import SenderType, TicketStatus
 
 
 async def _create_ticket(
@@ -407,3 +408,164 @@ async def test_agent_can_list_agents(
 async def test_unauthenticated_cannot_list_agents(client: AsyncClient):
     resp = await client.get("/api/tickets/agents")
     assert resp.status_code == 401
+
+
+# ── Reply Tests ───────────────────────────────────────────────────────────
+
+async def _create_reply(
+    db_session: AsyncSession,
+    ticket_id,
+    author_id,
+    sender_type: SenderType = SenderType.AGENT,
+    body_text: str = "This is a reply.",
+) -> TicketReply:
+    reply = TicketReply(
+        ticket_id=ticket_id,
+        author_id=author_id,
+        sender_type=sender_type,
+        body_text=body_text,
+    )
+    db_session.add(reply)
+    await db_session.commit()
+    await db_session.refresh(reply)
+    return reply
+
+
+async def test_list_replies_returns_replies(
+    db_session: AsyncSession, auth_client: AsyncClient, admin_user
+):
+    ticket = await _create_ticket(db_session, subject="Ticket with reply")
+    await _create_reply(db_session, ticket.id, admin_user.id, body_text="First reply")
+    await _create_reply(db_session, ticket.id, admin_user.id, body_text="Second reply")
+
+    resp = await auth_client.get(f"/api/tickets/{ticket.id}/replies")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 2
+    assert data[0]["body_text"] == "First reply"
+    assert data[1]["body_text"] == "Second reply"
+    assert data[0]["sender_type"] == "agent"
+    assert data[0]["author_name"] == admin_user.name
+
+
+async def test_list_replies_empty(db_session: AsyncSession, auth_client: AsyncClient):
+    ticket = await _create_ticket(db_session)
+
+    resp = await auth_client.get(f"/api/tickets/{ticket.id}/replies")
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+async def test_create_reply_succeeds(
+    db_session: AsyncSession, auth_client: AsyncClient, admin_user
+):
+    ticket = await _create_ticket(db_session)
+
+    resp = await auth_client.post(
+        f"/api/tickets/{ticket.id}/replies",
+        json={"body_text": "I am replying to this ticket."},
+    )
+    assert resp.status_code == 201
+    data = resp.json()
+    assert data["body_text"] == "I am replying to this ticket."
+    assert data["sender_type"] == "agent"
+    assert data["author_id"] == str(admin_user.id)
+    assert data["author_name"] == admin_user.name
+    assert data["ticket_id"] == str(ticket.id)
+    assert "id" in data
+    assert "created_at" in data
+
+
+async def test_create_reply_empty_body(db_session: AsyncSession, auth_client: AsyncClient):
+    ticket = await _create_ticket(db_session)
+
+    resp = await auth_client.post(
+        f"/api/tickets/{ticket.id}/replies",
+        json={"body_text": ""},
+    )
+    assert resp.status_code == 422
+
+
+async def test_create_reply_ticket_not_found(auth_client: AsyncClient):
+    resp = await auth_client.post(
+        "/api/tickets/00000000-0000-0000-0000-000000000000/replies",
+        json={"body_text": "Reply to nothing"},
+    )
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "Ticket not found"
+
+
+async def test_unauthenticated_cannot_create_reply(client: AsyncClient):
+    resp = await client.post(
+        "/api/tickets/00000000-0000-0000-0000-000000000000/replies",
+        json={"body_text": "Unauthenticated reply"},
+    )
+    assert resp.status_code == 401
+
+
+async def test_unauthenticated_cannot_list_replies(client: AsyncClient):
+    resp = await client.get(
+        "/api/tickets/00000000-0000-0000-0000-000000000000/replies"
+    )
+    assert resp.status_code == 401
+
+
+async def test_agent_can_create_reply(
+    db_session: AsyncSession, client: AsyncClient, agent_user
+):
+    from app.core.security import generate_session_token, session_expiry
+    from app.models.session import Session
+
+    session = Session(
+        user_id=agent_user.id,
+        token=generate_session_token(),
+        expires_at=session_expiry(),
+    )
+    db_session.add(session)
+    await db_session.commit()
+
+    ticket = await _create_ticket(db_session)
+
+    client.cookies.set("session", session.token)
+    resp = await client.post(
+        f"/api/tickets/{ticket.id}/replies",
+        json={"body_text": "Agent reply"},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["author_id"] == str(agent_user.id)
+    assert resp.json()["author_name"] == agent_user.name
+
+
+async def test_get_ticket_includes_replies(
+    db_session: AsyncSession, auth_client: AsyncClient, admin_user
+):
+    ticket = await _create_ticket(db_session, subject="Ticket with replies")
+    await _create_reply(db_session, ticket.id, admin_user.id, body_text="Reply 1")
+    await _create_reply(db_session, ticket.id, admin_user.id, body_text="Reply 2")
+
+    resp = await auth_client.get(f"/api/tickets/{ticket.id}")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "replies" in data
+    assert len(data["replies"]) == 2
+    assert data["replies"][0]["body_text"] == "Reply 1"
+    assert data["replies"][1]["body_text"] == "Reply 2"
+    assert data["replies"][0]["sender_type"] == "agent"
+    assert data["replies"][0]["author_name"] == admin_user.name
+
+
+async def test_get_ticket_replies_ordered_chronologically(
+    db_session: AsyncSession, auth_client: AsyncClient, admin_user
+):
+    ticket = await _create_ticket(db_session)
+    await _create_reply(db_session, ticket.id, admin_user.id, body_text="First")
+    await _create_reply(db_session, ticket.id, admin_user.id, body_text="Second")
+    await _create_reply(db_session, ticket.id, admin_user.id, body_text="Third")
+
+    resp = await auth_client.get(f"/api/tickets/{ticket.id}")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data["replies"]) == 3
+    assert data["replies"][0]["body_text"] == "First"
+    assert data["replies"][1]["body_text"] == "Second"
+    assert data["replies"][2]["body_text"] == "Third"

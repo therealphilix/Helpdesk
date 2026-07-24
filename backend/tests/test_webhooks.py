@@ -3,7 +3,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.ticket import Ticket
-from app.models.enums import TicketStatus
+from app.models.ticket_reply import TicketReply
+from app.models.enums import SenderType, TicketStatus
 
 WEBHOOK_HEADERS = {"X-Webhook-Secret": "test-webhook-secret"}
 
@@ -74,7 +75,7 @@ async def test_inbound_email_duplicate_is_idempotent(
     assert len(count.scalars().all()) == 1
 
 
-async def test_inbound_email_different_body_new_ticket(
+async def test_inbound_email_different_body_creates_reply(
     client: AsyncClient, db_session: AsyncSession
 ):
     resp1 = await client.post(
@@ -87,6 +88,7 @@ async def test_inbound_email_different_body_new_ticket(
         headers=WEBHOOK_HEADERS,
     )
     assert resp1.status_code == 201
+    ticket_id = resp1.json()["id"]
 
     resp2 = await client.post(
         "/api/webhooks/email",
@@ -97,8 +99,48 @@ async def test_inbound_email_different_body_new_ticket(
         },
         headers=WEBHOOK_HEADERS,
     )
-    assert resp2.status_code == 201
-    assert resp2.json()["id"] != resp1.json()["id"]
+    assert resp2.status_code == 200
+    assert resp2.json()["id"] == ticket_id
+
+    tickets = await db_session.execute(select(Ticket))
+    assert len(tickets.scalars().all()) == 1
+
+    replies = await db_session.execute(
+        select(TicketReply).where(TicketReply.ticket_id == ticket_id)
+    )
+    reply_list = replies.scalars().all()
+    assert len(reply_list) == 1
+    assert reply_list[0].body_text == "When will my refund be processed?"
+    assert reply_list[0].sender_type == SenderType.CUSTOMER
+
+
+async def test_inbound_email_reply_updates_sender_name(
+    client: AsyncClient, db_session: AsyncSession
+):
+    resp1 = await client.post(
+        "/api/webhooks/email",
+        json={
+            "sender_email": "changer@university.edu",
+            "sender_name": "Old Name",
+            "subject": "Name change",
+            "body_text": "First message.",
+        },
+        headers=WEBHOOK_HEADERS,
+    )
+    assert resp1.status_code == 201
+
+    resp2 = await client.post(
+        "/api/webhooks/email",
+        json={
+            "sender_email": "changer@university.edu",
+            "sender_name": "New Name",
+            "subject": "Name change",
+            "body_text": "Follow-up message.",
+        },
+        headers=WEBHOOK_HEADERS,
+    )
+    assert resp2.status_code == 200
+    assert resp2.json()["sender_name"] == "New Name"
 
 
 async def test_inbound_email_minimal_fields(client: AsyncClient):

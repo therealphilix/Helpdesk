@@ -6,7 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.database import get_db
 from ..core.dependencies import verify_webhook_secret
+from ..models.enums import SenderType, TicketStatus
 from ..models.ticket import Ticket
+from ..models.ticket_reply import TicketReply
 from ..schemas.ticket import InboundEmail, TicketOut
 
 router = APIRouter()
@@ -30,12 +32,28 @@ async def inbound_email(
         select(Ticket).where(
             Ticket.sender_email == body.sender_email,
             Ticket.subject == body.subject,
+            Ticket.status == TicketStatus.OPEN
         )
     )
     for ticket in existing.scalars().all():
         if _body_hash(ticket.body_text) == body_hash:
             response.status_code = status.HTTP_200_OK
             return ticket
+
+        reply = TicketReply(
+            ticket_id=ticket.id,
+            sender_type=SenderType.CUSTOMER,
+            body_text=body.body_text,
+        )
+        db.add(reply)
+
+        if body.sender_name and body.sender_name != ticket.sender_name:
+            ticket.sender_name = body.sender_name
+
+        await db.commit()
+        await db.refresh(ticket)
+        response.status_code = status.HTTP_200_OK
+        return ticket
 
     ticket = Ticket(
         sender_email=body.sender_email,

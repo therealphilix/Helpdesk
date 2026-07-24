@@ -26,6 +26,23 @@ export const statusOptions: { value: string; label: string }[] = [
   { value: "closed", label: "Closed" },
 ]
 
+export const SenderType = {
+  AGENT: "agent",
+  CUSTOMER: "customer",
+} as const;
+
+export type SenderType = (typeof SenderType)[keyof typeof SenderType];
+
+export interface ReplyOut {
+  id: string
+  ticket_id: string
+  sender_type: SenderType
+  author_id: string | null
+  author_name: string | null
+  body_text: string
+  created_at: string
+}
+
 export const categoryOptions: { value: string; label: string }[] = [
   { value: "general question", label: "General Question" },
   { value: "technical question", label: "Technical Question" },
