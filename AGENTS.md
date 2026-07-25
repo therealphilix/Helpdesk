@@ -186,6 +186,12 @@ Tests live in `frontend/e2e/`.
 ## Conventions
 
 - **Python**: async SQLAlchemy 2.0 (Mapped, mapped_column), type hints everywhere, FastAPI dependency injection for DB sessions and auth, bcrypt for password hashing
+- **Database migrations**: when creating or modifying ANY SQLAlchemy model, you MUST create an Alembic migration (`alembic revision --autogenerate -m "..."`), then run it against BOTH the dev DB and the test DB:
+  ```powershell
+  cd backend
+  alembic upgrade head
+  $env:DATABASE_URL='postgresql+asyncpg://helpdesk:helpdesk@localhost:5432/helpdesk_test'; alembic upgrade head
+  ```
 - **TypeScript**: strict mode, no default exports in new code (use named exports), React 19 + TypeScript 6
 - **Role checks**: use the `UserRole` enum from `src/lib/roles.ts` for all role comparisons. Never use bare string literals `"admin"` or `"agent"`. The enum mirrors the backend `UserRole` (Python).
   ```typescript
