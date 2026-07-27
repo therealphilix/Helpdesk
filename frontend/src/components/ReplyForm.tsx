@@ -1,24 +1,21 @@
 import { useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Loader2, Send } from "lucide-react"
+import type { Ticket } from "../lib/tickets"
 import { apiClient } from "../api/client"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 
-interface ReplyFormProps {
-  ticketId: string
-}
-
-export function ReplyForm({ ticketId }: ReplyFormProps) {
+export function ReplyForm({ ticket }: { ticket: Pick<Ticket, "id"> }) {
   const queryClient = useQueryClient()
   const [replyText, setReplyText] = useState("")
 
   const createReply = useMutation({
     mutationFn: (data: { body_text: string }) =>
-      apiClient.post(`/tickets/${ticketId}/replies`, data),
+      apiClient.post(`/tickets/${ticket.id}/replies`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["ticket", ticketId] })
-      queryClient.invalidateQueries({ queryKey: ["replies", ticketId] })
+      queryClient.invalidateQueries({ queryKey: ["ticket", ticket.id] })
+      queryClient.invalidateQueries({ queryKey: ["replies", ticket.id] })
       setReplyText("")
     },
   })

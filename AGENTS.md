@@ -173,7 +173,30 @@ Tests live in `src/routes/__tests__/` and follow the query priority: `getByRole`
 
 ### E2E Tests (Playwright) — **Use sparingly, only for full-stack integration**
 
-E2E tests are reserved for flows that span the entire stack end-to-end (e.g., webhook → database → API → frontend rendering). Do NOT write E2E tests for UI-only assertions like page headings, empty states, loading skeletons, navbar links, or redirect logic — these belong in component tests.
+E2E tests are reserved for flows that span the entire stack end-to-end and **cannot be verified by component tests or backend tests**. Component tests (Vitest + RTL with mocked hooks) cover rendering, loading, error, empty, and data states for all UI. Backend pytest tests cover API logic. E2E tests fill the remaining gap: real API calls hitting a real database with a real browser.
+
+**Do NOT write E2E tests for:**
+- UI rendering assertions (headings, labels, badges, formatted dates, sender info)
+- Loading skeletons, spinners, or placeholders
+- Empty states ("No tickets found", "No replies")
+- Error states (alert messages, error boundaries)
+- Form validation (required fields, format errors, min/max length)
+- Redirect logic (unauthenticated → /login, non-admin → /)
+- Navbar links, brand text, Sign Out button
+- Disabled/enabled button states
+
+**DO write E2E tests ONLY when the flow requires:**
+- A real database transaction (INSERT/UPDATE/DELETE hitting PostgreSQL)
+- A real API call that cannot be mocked (webhook ingress, CSRF token exchange, session cookie roundtrip)
+- A multi-page navigation that crosses route boundaries with live data
+- Verifying that a mutation's side effects persist across a page reload
+- End-to-end pipelines (e.g., webhook → DB → API response → frontend rendering)
+
+**Examples of valid E2E test scenarios:**
+- Create a ticket via webhook, navigate to list, click row, verify detail page loads correct data
+- Change ticket status → verify PATCH sent → badge updates → reload persists
+- Submit a reply → verify POST sent → reply appears in thread → textarea cleared
+- Click "Back to tickets" → verify navigation to `/tickets` with page content visible
 
 When an E2E test is genuinely needed, use the **e2e-tester** subagent (`.kilo/agent/e2e-tester.md`):
 

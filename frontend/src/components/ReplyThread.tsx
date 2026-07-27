@@ -1,16 +1,11 @@
-import type { ReplyOut } from "../lib/tickets"
+import type { Ticket } from "../lib/tickets"
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString()
 }
 
-interface ReplyThreadProps {
-  replies: ReplyOut[]
-  senderName: string | null
-  senderEmail: string
-}
-
-export function ReplyThread({ replies, senderName, senderEmail }: ReplyThreadProps) {
+export function ReplyThread({ ticket }: { ticket: Pick<Ticket, "replies" | "sender_name" | "sender_email"> }) {
+  const { replies, sender_name, sender_email } = ticket
   if (replies.length === 0) return null
 
   return (
@@ -27,7 +22,7 @@ export function ReplyThread({ replies, senderName, senderEmail }: ReplyThreadPro
             <div className="flex items-center gap-2 mb-1.5">
               <span className="text-sm font-medium">
                 {reply.sender_type === "customer"
-                  ? (senderName ?? senderEmail)
+                  ? (sender_name ?? sender_email)
                   : (reply.author_name ?? "Agent")}
               </span>
               <span className="text-xs text-muted-foreground">

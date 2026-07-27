@@ -48,3 +48,19 @@ export const categoryOptions: { value: string; label: string }[] = [
   { value: "technical question", label: "Technical Question" },
   { value: "refund request", label: "Refund Request" },
 ]
+
+export interface Ticket {
+  id: string
+  sender_email: string
+  sender_name: string | null
+  subject: string
+  body_text: string
+  body_html: string | null
+  status: TicketStatus
+  category: TicketCategory | null
+  assigned_to: string | null
+  assignee_name: string | null
+  replies: ReplyOut[]
+  created_at: string
+  updated_at: string
+}
