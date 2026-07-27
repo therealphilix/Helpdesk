@@ -113,7 +113,7 @@ export function UpdateTicket({ ticket, agents, isPending, onUpdate }: UpdateTick
                   {(val: string) => {
                     if (!val || val === "unassigned") return "Unassigned"
                     const agent = agents.find((a) => a.id === val)
-                    return agent ? agent.name : val
+                    return agent ? agent.name : "Unassigned"
                   }}
                 </SelectValue>
               </SelectTrigger>

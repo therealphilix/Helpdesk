@@ -1,13 +1,13 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..core.database import get_db
 from ..core.dependencies import get_current_admin
 from ..core.security import hash_password
-from ..models import Session, User
+from ..models import Session, Ticket, User
 from ..models.enums import UserRole
 from ..schemas import AdminUserOut, UserCreate, UserUpdate
 
@@ -97,6 +97,9 @@ async def delete_user(
         )
 
     await db.execute(delete(Session).where(Session.user_id == user_id))
+    await db.execute(
+        update(Ticket).where(Ticket.assigned_to == user_id).values(assigned_to=None)
+    )
     user.deleted_at = func.now()
     await db.commit()
     return {"ok": True}

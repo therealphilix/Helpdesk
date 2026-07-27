@@ -5,8 +5,9 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import generate_session_token, hash_password, session_expiry
-from app.models.enums import UserRole
+from app.models.enums import TicketStatus, UserRole
 from app.models.session import Session
+from app.models.ticket import Ticket
 from app.models.user import User
 
 
@@ -99,3 +100,28 @@ async def test_users_ordered_by_created_desc(
 
     created_dates = [u["created_at"] for u in data]
     assert created_dates == sorted(created_dates, reverse=True)
+
+
+async def test_delete_user_unassigns_tickets(
+    db_session: AsyncSession, auth_client: AsyncClient
+):
+    agent = await _create_user(db_session, "todelete@test.com", "To Delete", UserRole.AGENT)
+
+    ticket = Ticket(
+        sender_email="student@test.com",
+        subject="Test ticket",
+        body_text="Body",
+        status=TicketStatus.OPEN,
+        category=None,
+        assigned_to=agent.id,
+    )
+    db_session.add(ticket)
+    await db_session.commit()
+    await db_session.refresh(ticket)
+    assert ticket.assigned_to == agent.id
+
+    resp = await auth_client.delete(f"/api/users/{agent.id}")
+    assert resp.status_code == 200
+
+    await db_session.refresh(ticket)
+    assert ticket.assigned_to is None
