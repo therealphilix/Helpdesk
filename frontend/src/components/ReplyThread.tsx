@@ -1,4 +1,5 @@
 import type { Ticket } from "../lib/tickets"
+import DOMPurify from "dompurify"
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString()
@@ -29,9 +30,16 @@ export function ReplyThread({ ticket }: { ticket: Pick<Ticket, "replies" | "send
                 {formatDate(reply.created_at)}
               </span>
             </div>
-            <div className="text-sm whitespace-pre-wrap">
-              {reply.body_text}
-            </div>
+            {reply.body_html ? (
+              <div
+                className="text-sm"
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(reply.body_html) }}
+              />
+            ) : (
+              <div className="text-sm whitespace-pre-wrap">
+                {reply.body_text}
+              </div>
+            )}
           </div>
         ))}
       </div>

@@ -44,6 +44,7 @@ async def inbound_email(
             ticket_id=ticket.id,
             sender_type=SenderType.CUSTOMER,
             body_text=body.body_text,
+            body_html=body.body_html,
         )
         db.add(reply)
 

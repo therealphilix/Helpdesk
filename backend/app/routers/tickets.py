@@ -197,6 +197,7 @@ async def create_reply(
         author_id=current_user.id,
         sender_type=SenderType.AGENT,
         body_text=body.body_text,
+        body_html=body.body_html,
     )
     db.add(reply)
     await db.commit()

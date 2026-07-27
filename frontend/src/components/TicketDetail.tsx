@@ -1,5 +1,6 @@
 import type { Ticket } from "../lib/tickets"
 import { statusVariant } from "../lib/tickets"
+import DOMPurify from "dompurify"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
@@ -40,7 +41,7 @@ export function TicketDetail({ ticket }: { ticket: Ticket }) {
         {ticket.body_html ? (
           <div
             className="prose prose-sm max-w-none border rounded-lg p-4 bg-muted/30"
-            dangerouslySetInnerHTML={{ __html: ticket.body_html }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ticket.body_html) }}
           />
         ) : (
           <div className="border rounded-lg p-4 bg-muted/30 whitespace-pre-wrap text-sm">

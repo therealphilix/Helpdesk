@@ -8,6 +8,7 @@ from ..models.enums import SenderType
 
 class ReplyCreate(BaseModel):
     body_text: str = Field(min_length=1)
+    body_html: str | None = Field(default=None)
 
 
 class ReplyOut(BaseModel):
@@ -17,6 +18,7 @@ class ReplyOut(BaseModel):
     author_id: uuid.UUID | None
     author_name: str | None
     body_text: str
+    body_html: str | None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -36,6 +38,7 @@ class ReplyOut(BaseModel):
                     "author_id": data.author_id,
                     "author_name": name,
                     "body_text": data.body_text,
+                    "body_html": data.body_html,
                     "created_at": data.created_at,
                 }
         return data

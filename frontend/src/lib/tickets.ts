@@ -40,6 +40,7 @@ export interface ReplyOut {
   author_id: string | null
   author_name: string | null
   body_text: string
+  body_html: string | null
   created_at: string
 }
 

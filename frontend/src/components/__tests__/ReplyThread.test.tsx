@@ -13,6 +13,7 @@ const mockTicket = {
       author_id: "user-1",
       author_name: "Jane Agent",
       body_text: "I'll look into this.",
+      body_html: null,
       created_at: "2025-07-20T11:00:00Z",
     },
     {
@@ -22,6 +23,7 @@ const mockTicket = {
       author_id: null,
       author_name: null,
       body_text: "Thank you!",
+      body_html: null,
       created_at: "2025-07-20T11:30:00Z",
     },
   ],
@@ -77,5 +79,18 @@ describe("ReplyThread", () => {
     const dateElements = document.querySelectorAll(".text-xs.text-muted-foreground")
     expect(dateElements.length).toBe(2)
     expect(dateElements[0].textContent).toContain("2025")
+  })
+
+  it("renders sanitized body_html when present", () => {
+    const ticket = {
+      ...mockTicket,
+      replies: [
+        { ...mockTicket.replies[0], body_html: "<p>I'll <strong>look</strong> into this.</p>" },
+      ],
+    }
+    render(<ReplyThread ticket={ticket} />)
+    const el = document.querySelector("strong")
+    expect(el).toBeInTheDocument()
+    expect(el?.textContent).toBe("look")
   })
 })

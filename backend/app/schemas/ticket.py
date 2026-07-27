@@ -14,11 +14,11 @@ _SUBJECT_PREFIX_RE = re.compile(
 
 
 class InboundEmail(BaseModel):
-    sender_email: EmailStr
+    sender_email: EmailStr = Field(max_length=255)
     sender_name: str | None = Field(default=None, max_length=255)
-    subject: str = Field(min_length=1)
-    body_text: str = Field(min_length=1)
-    body_html: str | None = Field(default=None)
+    subject: str = Field(min_length=1, max_length=255)
+    body_text: str = Field(min_length=1, max_length=5000)
+    body_html: str | None = Field(default=None, max_length=5000)
 
     @field_validator("subject", mode="before")
     @classmethod

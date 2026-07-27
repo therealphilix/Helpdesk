@@ -91,6 +91,7 @@ const mockTicket = {
     author_id: string | null
     author_name: string | null
     body_text: string
+    body_html: string | null
     created_at: string
   }[],
   created_at: "2025-07-20T10:00:00Z",
@@ -413,6 +414,7 @@ describe("TicketDetailPage replies", () => {
             author_id: "admin-1",
             author_name: "Jane Agent",
             body_text: "I'll look into this.",
+            body_html: null,
             created_at: "2025-07-20T11:00:00Z",
           },
           {
@@ -421,6 +423,7 @@ describe("TicketDetailPage replies", () => {
             author_id: null,
             author_name: null,
             body_text: "Thank you!",
+            body_html: null,
             created_at: "2025-07-20T11:30:00Z",
           },
         ],
@@ -445,6 +448,7 @@ describe("TicketDetailPage replies", () => {
             author_id: null,
             author_name: null,
             body_text: "Can you help?",
+            body_html: null,
             created_at: "2025-07-20T11:00:00Z",
           },
         ],
