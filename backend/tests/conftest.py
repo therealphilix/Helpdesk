@@ -9,6 +9,8 @@ os.environ["REDIS_URL"] = os.getenv("TEST_REDIS_URL", "redis://localhost:6379/1"
 os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only"
 os.environ["CORS_ORIGINS"] = "http://localhost:5173"
 os.environ["WEBHOOK_SECRET"] = "test-webhook-secret"
+os.environ["OPENAI_API_KEY"] = "test-openai-key"
+os.environ["OPENAI_MODEL"] = "deepseek-chat"
 
 from collections.abc import AsyncGenerator
 from typing import Any

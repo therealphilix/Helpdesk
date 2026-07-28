@@ -569,3 +569,255 @@ async def test_get_ticket_replies_ordered_chronologically(
     assert data["replies"][0]["body_text"] == "First"
     assert data["replies"][1]["body_text"] == "Second"
     assert data["replies"][2]["body_text"] == "Third"
+
+
+# ── Polish Tests ──────────────────────────────────────────────────────────
+
+from unittest.mock import AsyncMock, MagicMock, patch
+
+
+async def test_polish_reply_returns_polished_text_with_salutation_and_signature(
+    db_session: AsyncSession, auth_client: AsyncClient, admin_user
+):
+    ticket = await _create_ticket(
+        db_session, sender_name="Jane Doe", subject="Need help"
+    )
+
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock()]
+    mock_response.choices[0].message.content = "Polished body text."
+
+    mock_client = MagicMock()
+    mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+    with patch("app.routers.tickets.AsyncOpenAI", return_value=mock_client):
+        resp = await auth_client.post(
+            f"/api/tickets/{ticket.id}/replies/polish",
+            json={"draft": "rough draft reply"},
+        )
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["polished"].startswith("Hi Jane,\n\n")
+    assert "Polished body text." in data["polished"]
+    assert data["polished"].endswith(f"Best regards,\n{admin_user.name}\nhttps://helpdesk.com")
+
+
+async def test_polish_reply_fallback_salutation_when_no_sender_name(
+    db_session: AsyncSession, auth_client: AsyncClient
+):
+    ticket = await _create_ticket(
+        db_session, sender_name=None, subject="Anonymous"
+    )
+
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock()]
+    mock_response.choices[0].message.content = "Polished body."
+
+    mock_client = MagicMock()
+    mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+    with patch("app.routers.tickets.AsyncOpenAI", return_value=mock_client):
+        resp = await auth_client.post(
+            f"/api/tickets/{ticket.id}/replies/polish",
+            json={"draft": "draft"},
+        )
+
+    assert resp.status_code == 200
+    assert resp.json()["polished"].startswith("Hi there,\n\n")
+
+
+async def test_polish_reply_strips_existing_salutation_and_signature_on_repolish(
+    db_session: AsyncSession, auth_client: AsyncClient, admin_user
+):
+    ticket = await _create_ticket(
+        db_session, sender_name="Jane Doe", subject="Re-polish"
+    )
+
+    polished_with_trimmings = (
+        "Hi Jane,\n\n"
+        "Polished content.\n\n"
+        f"Best regards,\n{admin_user.name}\nhttps://helpdesk.com"
+    )
+
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock()]
+    mock_response.choices[0].message.content = "Polished content."
+
+    mock_client = MagicMock()
+    mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+    with patch("app.routers.tickets.AsyncOpenAI", return_value=mock_client):
+        resp = await auth_client.post(
+            f"/api/tickets/{ticket.id}/replies/polish",
+            json={"draft": polished_with_trimmings},
+        )
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["polished"] == (
+        "Hi Jane,\n\nPolished content.\n\n"
+        f"Best regards,\n{admin_user.name}\nhttps://helpdesk.com"
+    )
+
+
+async def test_polish_reply_missing_api_key_returns_500(
+    db_session: AsyncSession, auth_client: AsyncClient
+):
+    ticket = await _create_ticket(db_session, subject="No API key")
+
+    with patch("app.routers.tickets.settings.OPENAI_API_KEY", ""):
+        resp = await auth_client.post(
+            f"/api/tickets/{ticket.id}/replies/polish",
+            json={"draft": "draft reply"},
+        )
+
+    assert resp.status_code == 500
+    assert resp.json()["detail"] == "OPENAI_API_KEY is not configured"
+
+
+async def test_polish_reply_ticket_not_found_returns_404(
+    auth_client: AsyncClient
+):
+    resp = await auth_client.post(
+        "/api/tickets/00000000-0000-0000-0000-000000000000/replies/polish",
+        json={"draft": "draft reply"},
+    )
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "Ticket not found"
+
+
+async def test_polish_reply_empty_draft_returns_422(
+    db_session: AsyncSession, auth_client: AsyncClient
+):
+    ticket = await _create_ticket(db_session)
+
+    resp = await auth_client.post(
+        f"/api/tickets/{ticket.id}/replies/polish",
+        json={"draft": ""},
+    )
+    assert resp.status_code == 422
+
+
+async def test_polish_reply_unauthenticated_returns_401(
+    client: AsyncClient
+):
+    resp = await client.post(
+        "/api/tickets/00000000-0000-0000-0000-000000000000/replies/polish",
+        json={"draft": "draft reply"},
+    )
+    assert resp.status_code == 401
+
+
+async def test_agent_can_polish_reply(
+    db_session: AsyncSession, client: AsyncClient, agent_user
+):
+    from app.core.security import generate_session_token, session_expiry
+    from app.models.session import Session
+
+    session = Session(
+        user_id=agent_user.id,
+        token=generate_session_token(),
+        expires_at=session_expiry(),
+    )
+    db_session.add(session)
+    await db_session.commit()
+
+    ticket = await _create_ticket(db_session, subject="Agent polish")
+
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock()]
+    mock_response.choices[0].message.content = "Agent polished text."
+
+    mock_client = MagicMock()
+    mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+    with patch("app.routers.tickets.AsyncOpenAI", return_value=mock_client):
+        client.cookies.set("session", session.token)
+        resp = await client.post(
+            f"/api/tickets/{ticket.id}/replies/polish",
+            json={"draft": "draft"},
+        )
+
+    assert resp.status_code == 200
+    assert f"Best regards,\n{agent_user.name}" in resp.json()["polished"]
+
+
+async def test_polish_reply_ai_error_returns_502(
+    db_session: AsyncSession, auth_client: AsyncClient
+):
+    ticket = await _create_ticket(db_session, subject="AI error")
+
+    mock_client = MagicMock()
+    mock_client.chat.completions.create = AsyncMock(
+        side_effect=Exception("DeepSeek API timeout")
+    )
+
+    with patch("app.routers.tickets.AsyncOpenAI", return_value=mock_client):
+        resp = await auth_client.post(
+            f"/api/tickets/{ticket.id}/replies/polish",
+            json={"draft": "draft reply"},
+        )
+
+    assert resp.status_code == 502
+    assert "AI polish failed" in resp.json()["detail"]
+
+
+async def test_polish_reply_sends_ticket_context_to_ai(
+    db_session: AsyncSession, auth_client: AsyncClient
+):
+    ticket = await _create_ticket(
+        db_session,
+        sender_name="Alice",
+        subject="Login broken",
+        body_text="I cannot log in at all.",
+    )
+    ticket.category = "technical question"
+    await db_session.commit()
+
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock()]
+    mock_response.choices[0].message.content = "Refined reply."
+
+    mock_client = MagicMock()
+    mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+    with patch("app.routers.tickets.AsyncOpenAI", return_value=mock_client):
+        resp = await auth_client.post(
+            f"/api/tickets/{ticket.id}/replies/polish",
+            json={"draft": "Try restarting your browser."},
+        )
+
+    assert resp.status_code == 200
+
+    call_args = mock_client.chat.completions.create.call_args[1]
+    user_msg = call_args["messages"][1]["content"]
+    assert "Login broken" in user_msg
+    assert "I cannot log in at all." in user_msg
+    assert "technical question" in user_msg
+    assert "Try restarting your browser." in user_msg
+
+
+async def test_polish_reply_uses_configured_model(
+    db_session: AsyncSession, auth_client: AsyncClient
+):
+    ticket = await _create_ticket(db_session, subject="Model config")
+
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock()]
+    mock_response.choices[0].message.content = "Refined."
+
+    mock_client = MagicMock()
+    mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
+
+    with patch("app.routers.tickets.AsyncOpenAI", return_value=mock_client):
+        resp = await auth_client.post(
+            f"/api/tickets/{ticket.id}/replies/polish",
+            json={"draft": "draft"},
+        )
+
+    assert resp.status_code == 200
+    call_args = mock_client.chat.completions.create.call_args[1]
+    assert call_args["model"] == "deepseek-chat"
+    assert call_args["temperature"] == 0.7
+    assert call_args["max_tokens"] == 2048
