@@ -141,3 +141,7 @@ class AgentOut(BaseModel):
     email: str
 
     model_config = {"from_attributes": True}
+
+
+class SummarizeResponse(BaseModel):
+    summary: str

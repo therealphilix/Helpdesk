@@ -1,14 +1,24 @@
+import DOMPurify from "dompurify"
+import { useMutation } from "@tanstack/react-query"
+import { Loader2, Sparkles } from "lucide-react"
 import type { Ticket } from "../lib/tickets"
 import { statusVariant } from "../lib/tickets"
-import DOMPurify from "dompurify"
+import { apiClient } from "../api/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString()
 }
 
 export function TicketDetail({ ticket }: { ticket: Ticket }) {
+  const summarize = useMutation({
+    mutationFn: () =>
+      apiClient.post(`/tickets/${ticket.id}/summarize`).then((res) => res.data),
+  })
+
   return (
     <Card className="border-0 shadow-none">
       <CardHeader>
@@ -46,6 +56,44 @@ export function TicketDetail({ ticket }: { ticket: Ticket }) {
         ) : (
           <div className="border rounded-lg p-4 bg-muted/30 whitespace-pre-wrap text-sm">
             {ticket.body_text}
+          </div>
+        )}
+
+        <div className="flex justify-end mt-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => summarize.mutate()}
+            disabled={summarize.isPending}
+          >
+            {summarize.isPending ? (
+              <>
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                Summarizing...
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                Summarize
+              </>
+            )}
+          </Button>
+        </div>
+
+        {summarize.isError && (
+          <Alert variant="destructive" className="mt-3">
+            <AlertDescription>
+              {summarize.error instanceof Error
+                ? summarize.error.message
+                : "Failed to generate summary."}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {summarize.data?.summary && (
+          <div className="mt-3 border rounded-lg p-4 bg-muted/30">
+            <h4 className="text-sm font-semibold mb-2">Summary</h4>
+            <p className="text-sm whitespace-pre-wrap">{summarize.data.summary}</p>
           </div>
         )}
       </CardContent>

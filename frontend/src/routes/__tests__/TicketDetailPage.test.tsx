@@ -501,7 +501,7 @@ describe("TicketDetailPage replies", () => {
     let callIndex = 0
     useMutationMock.mockImplementation(() => {
       callIndex++
-      if (callIndex === 2) {
+      if (callIndex === 3) {
         return { mutate: vi.fn(), isPending: true, isError: false, error: null }
       }
       return { mutate: vi.fn(), isPending: false, isError: false, error: null }
@@ -517,7 +517,7 @@ describe("TicketDetailPage replies", () => {
     let callIndex = 0
     useMutationMock.mockImplementation(() => {
       callIndex++
-      if (callIndex === 2) {
+      if (callIndex === 3) {
         return { mutate: vi.fn(), isPending: false, isError: true, error: new Error("Failed to send reply.") }
       }
       return { mutate: vi.fn(), isPending: false, isError: false, error: null }
@@ -534,7 +534,7 @@ describe("TicketDetailPage replies", () => {
     const textarea = screen.getByPlaceholderText("Type your reply...") as HTMLTextAreaElement
     expect(textarea.value).toBe("")
 
-    const replyOnSuccess = useMutationMock.mock.calls[1]?.[0]?.onSuccess
+    const replyOnSuccess = useMutationMock.mock.calls[2]?.[0]?.onSuccess
     expect(replyOnSuccess).toBeDefined()
     replyOnSuccess()
 

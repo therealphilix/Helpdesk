@@ -14,7 +14,7 @@ from ..models.ticket import Ticket
 from ..models.ticket_reply import TicketReply
 from ..models.user import User
 from ..schemas.reply import PolishRequest, PolishResponse, ReplyCreate, ReplyOut
-from ..schemas.ticket import AgentOut, TicketDetailOut, TicketPaginatedOut, TicketUpdate
+from ..schemas.ticket import AgentOut, SummarizeResponse, TicketDetailOut, TicketPaginatedOut, TicketUpdate
 
 router = APIRouter()
 
@@ -265,3 +265,74 @@ async def polish_reply(
         return PolishResponse(polished=salutation + polished.strip() + signature)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"AI polish failed: {str(e)}")
+
+
+@router.post("/{ticket_id}/summarize", response_model=SummarizeResponse)
+async def summarize_ticket(
+    ticket_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if not settings.OPENAI_API_KEY:
+        raise HTTPException(status_code=500, detail="OPENAI_API_KEY is not configured")
+
+    query = (
+        select(Ticket)
+        .options(
+            selectinload(Ticket.replies).joinedload(TicketReply.author),
+        )
+        .where(Ticket.id == ticket_id)
+    )
+    result = await db.execute(query)
+    ticket = result.scalars().first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+
+    transcript_lines = [
+        f"Subject: {ticket.subject}",
+        f"From: {ticket.sender_name or ticket.sender_email} ({ticket.sender_email})",
+        f"Category: {ticket.category or 'N/A'}",
+        f"Status: {ticket.status}",
+        f"",
+        f"--- Original Message ---",
+        ticket.body_text,
+    ]
+
+    if ticket.replies:
+        transcript_lines.append("")
+        transcript_lines.append("--- Replies ---")
+        for reply in ticket.replies:
+            sender = reply.author.name if reply.author else ticket.sender_name or ticket.sender_email
+            role = "Agent" if reply.sender_type == SenderType.AGENT else "Customer"
+            transcript_lines.append(f"[{role}] {sender}: {reply.body_text}")
+
+    transcript = "\n".join(transcript_lines)
+
+    client = AsyncOpenAI(
+        api_key=settings.OPENAI_API_KEY,
+        base_url=settings.OPENAI_BASE_URL,
+    )
+
+    system_prompt = (
+        "You are a helpful assistant that summarizes support ticket conversations. "
+        "Write a concise summary covering: 1) the customer's issue, "
+        "2) what has been discussed and suggested so far, "
+        "3) the current status and any next steps needed. "
+        "Keep the summary to 3-5 sentences. "
+        "Return only the summary text, without any prefixes, explanations, or markdown formatting."
+    )
+
+    try:
+        response = await client.chat.completions.create(
+            model=settings.OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"Summarize this ticket conversation:\n\n{transcript}"},
+            ],
+            temperature=0.5,
+            max_tokens=1024,
+        )
+        summary = response.choices[0].message.content or "Unable to generate summary."
+        return SummarizeResponse(summary=summary.strip())
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"AI summarize failed: {str(e)}")
