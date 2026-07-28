@@ -11,6 +11,14 @@ class ReplyCreate(BaseModel):
     body_html: str | None = Field(default=None)
 
 
+class PolishRequest(BaseModel):
+    draft: str = Field(min_length=1)
+
+
+class PolishResponse(BaseModel):
+    polished: str
+
+
 class ReplyOut(BaseModel):
     id: uuid.UUID
     ticket_id: uuid.UUID

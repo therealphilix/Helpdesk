@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     RESEND_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
+    OPENAI_BASE_URL: str = "https://api.deepseek.com"
+    OPENAI_MODEL: str = "deepseek-v4-flash"
     ANTHROPIC_API_KEY: str = ""
     WEBHOOK_SECRET: str = ""
 

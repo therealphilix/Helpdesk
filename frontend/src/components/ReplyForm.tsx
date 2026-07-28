@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { Loader2, Send } from "lucide-react"
+import { Loader2, Send, Wand2 } from "lucide-react"
 import type { Ticket } from "../lib/tickets"
 import { apiClient } from "../api/client"
 import { Button } from "@/components/ui/button"
@@ -20,10 +20,24 @@ export function ReplyForm({ ticket }: { ticket: Pick<Ticket, "id"> }) {
     },
   })
 
+  const polishReply = useMutation({
+    mutationFn: (data: { draft: string }) =>
+      apiClient.post(`/tickets/${ticket.id}/replies/polish`, data),
+    onSuccess: (res) => {
+      setReplyText(res.data.polished)
+    },
+  })
+
   const handleSubmitReply = () => {
     const trimmed = replyText.trim()
     if (!trimmed || createReply.isPending) return
     createReply.mutate({ body_text: trimmed })
+  }
+
+  const handlePolish = () => {
+    const trimmed = replyText.trim()
+    if (!trimmed || polishReply.isPending) return
+    polishReply.mutate({ draft: trimmed })
   }
 
   return (
@@ -44,7 +58,24 @@ export function ReplyForm({ ticket }: { ticket: Pick<Ticket, "id"> }) {
         disabled={createReply.isPending}
         rows={4}
       />
-      <div className="flex justify-end mt-2">
+      <div className="flex justify-between mt-2">
+        <Button
+          variant="outline"
+          onClick={handlePolish}
+          disabled={polishReply.isPending || !replyText.trim()}
+        >
+          {polishReply.isPending ? (
+            <>
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              Polishing...
+            </>
+          ) : (
+            <>
+              <Wand2 className="mr-1.5 h-4 w-4" />
+              Polish
+            </>
+          )}
+        </Button>
         <Button
           onClick={handleSubmitReply}
           disabled={createReply.isPending || !replyText.trim()}
@@ -61,6 +92,13 @@ export function ReplyForm({ ticket }: { ticket: Pick<Ticket, "id"> }) {
           {createReply.error instanceof Error
             ? createReply.error.message
             : "Failed to send reply."}
+        </p>
+      )}
+      {polishReply.isError && (
+        <p className="text-sm text-destructive mt-1">
+          {polishReply.error instanceof Error
+            ? polishReply.error.message
+            : "Failed to polish reply."}
         </p>
       )}
     </div>

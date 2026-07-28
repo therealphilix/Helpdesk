@@ -1,17 +1,19 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from openai import AsyncOpenAI
 from sqlalchemy import asc, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
+from ..core.config import settings
 from ..core.database import get_db
 from ..core.dependencies import get_current_user
 from ..models.enums import SenderType, TicketCategory, TicketStatus, UserRole
 from ..models.ticket import Ticket
 from ..models.ticket_reply import TicketReply
 from ..models.user import User
-from ..schemas.reply import ReplyCreate, ReplyOut
+from ..schemas.reply import PolishRequest, PolishResponse, ReplyCreate, ReplyOut
 from ..schemas.ticket import AgentOut, TicketDetailOut, TicketPaginatedOut, TicketUpdate
 
 router = APIRouter()
@@ -207,3 +209,59 @@ async def create_reply(
     reply.author = author
 
     return reply
+
+
+@router.post("/{ticket_id}/replies/polish", response_model=PolishResponse)
+async def polish_reply(
+    ticket_id: uuid.UUID,
+    body: PolishRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if not settings.OPENAI_API_KEY:
+        raise HTTPException(status_code=500, detail="OPENAI_API_KEY is not configured")
+
+    ticket = await db.get(Ticket, ticket_id)
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+
+    client = AsyncOpenAI(
+        api_key=settings.OPENAI_API_KEY,
+        base_url=settings.OPENAI_BASE_URL,
+    )
+
+    system_prompt = (
+        "You are a helpful assistant that improves support replies written by a customer support agent. "
+        "Polish the draft reply to be clearer, more professional, and more helpful. "
+        "Fix any grammar or spelling errors. Keep the tone warm and empathetic. "
+        "Do not add information the agent didn't include. Preserve the original meaning. "
+        "Return only the polished reply text, without any prefixes, explanations, or markdown formatting."
+    )
+
+    try:
+        first_name = ticket.sender_name.split(" ")[0] if ticket.sender_name else "there"
+        salutation = f"Hi {first_name},\n\n"
+        signature = f"\n\nBest regards,\n{current_user.name}\nhttps://helpdesk.com"
+        draft = body.draft.removeprefix(salutation).removesuffix(signature)
+
+        user_message = (
+            f"Ticket subject: {ticket.subject}\n"
+            f"Ticket body: {ticket.body_text}\n"
+            f"Category: {ticket.category or 'N/A'}\n"
+            f"\n"
+            f"Agent's draft reply:\n{draft}"
+        )
+
+        response = await client.chat.completions.create(
+            model=settings.OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message},
+            ],
+            temperature=0.7,
+            max_tokens=2048,
+        )
+        polished = response.choices[0].message.content or draft
+        return PolishResponse(polished=salutation + polished.strip() + signature)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"AI polish failed: {str(e)}")
