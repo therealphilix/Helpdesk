@@ -13,9 +13,15 @@ class TicketStatus(str, enum.Enum):
 
 
 class TicketCategory(str, enum.Enum):
-    GENERAL_QUESTION = "general question"
-    TECHNICAL_QUESTION = "technical question"
-    REFUND_REQUEST = "refund request"
+    GENERAL_QUESTION = ("general question", "General inquiries")
+    TECHNICAL_QUESTION = ("technical question", "Technical issues with software, hardware, or online platforms")
+    REFUND_REQUEST = ("refund request", "Requests for refunds, billing issues, or payment problems")
+
+    def __new__(cls, value: str, description: str) -> "TicketCategory":
+        obj = str.__new__(cls, value)
+        obj._value_ = value
+        obj.description = description
+        return obj
 
 
 class SenderType(str, enum.Enum):
