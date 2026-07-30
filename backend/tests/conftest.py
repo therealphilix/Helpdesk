@@ -28,6 +28,14 @@ from app.models.enums import UserRole
 TEST_DATABASE_URL = os.environ["DATABASE_URL"]
 
 
+class _MockArqRedis:
+    async def enqueue_job(self, name: str, *args: Any, **kwargs: Any) -> None:
+        pass
+
+    async def close(self) -> None:
+        pass
+
+
 def _make_engine():
     return create_async_engine(TEST_DATABASE_URL, echo=False)
 
@@ -60,6 +68,7 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
         yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
+    app.state.arq_redis = _MockArqRedis()
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac

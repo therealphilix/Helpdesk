@@ -1,6 +1,7 @@
-from contextlib import asynccontextmanager
 import asyncio
+from contextlib import asynccontextmanager
 
+from arq import create_pool
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
@@ -13,20 +14,34 @@ from .core.csrf import OriginGuard
 from .core.database import engine
 from .core.limiter import limiter
 from .routers import auth, tickets, users, webhooks
-from .services.session_cleanup import cleanup_expired_sessions, periodic_session_cleanup
+from .services.session_cleanup import periodic_session_cleanup
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.execute(text("SELECT 1"))
-    task = asyncio.create_task(periodic_session_cleanup())
-    yield
-    task.cancel()
+
     try:
-        await task
+        arq_redis = await create_pool(settings.arq_redis_settings())
+        app.state.arq_redis = arq_redis
+    except Exception:
+        import logging
+        logging.getLogger(__name__).warning("Redis unavailable — classification queue disabled")
+        app.state.arq_redis = None
+
+    session_task = asyncio.create_task(periodic_session_cleanup())
+
+    yield
+
+    session_task.cancel()
+    try:
+        await session_task
     except asyncio.CancelledError:
         pass
+
+    if app.state.arq_redis is not None:
+        await app.state.arq_redis.close()
 
 
 app = FastAPI(lifespan=lifespan)

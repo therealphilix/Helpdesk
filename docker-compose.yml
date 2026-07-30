@@ -25,6 +25,15 @@ services:
       - db
       - redis
 
+  worker:
+    build: ./backend
+    command: arq app.worker.WorkerSettings
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+
   frontend:
     build: ./frontend
     ports:

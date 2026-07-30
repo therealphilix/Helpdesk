@@ -48,3 +48,4 @@ playwright/.cache/
 frontend/e2e/.auth/
 backend/.env.test
 .kilo/kilo.jsonc
+bulletpoint.md

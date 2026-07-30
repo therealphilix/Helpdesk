@@ -1,5 +1,7 @@
 import os
+from urllib.parse import urlparse
 
+from arq.connections import RedisSettings as ArqRedisSettings
 from pydantic import model_validator
 from pydantic_settings import BaseSettings
 
@@ -30,6 +32,15 @@ class Settings(BaseSettings):
         if self.SECRET_KEY == "change-me-in-production":
             raise ValueError("SECRET_KEY must be changed. Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(64))\"")
         return self
+
+    def arq_redis_settings(self) -> ArqRedisSettings:
+        parsed = urlparse(self.REDIS_URL)
+        return ArqRedisSettings(
+            host=parsed.hostname or "localhost",
+            port=parsed.port or 6379,
+            password=parsed.password or None,
+            database=int(parsed.path.lstrip("/") or "0"),
+        )
 
 
 settings = Settings()

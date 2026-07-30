@@ -1,5 +1,5 @@
-import asyncio
 import hashlib
+import logging
 
 from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy import select
@@ -11,8 +11,8 @@ from ..models.enums import SenderType, TicketStatus
 from ..models.ticket import Ticket
 from ..models.ticket_reply import TicketReply
 from ..schemas.ticket import InboundEmail, TicketOut
-from ..services.ticket_classification import classify_ticket
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -68,6 +68,10 @@ async def inbound_email(
     db.add(ticket)
     await db.commit()
     await db.refresh(ticket)
-    asyncio.create_task(classify_ticket(ticket.id))
+    try:
+        arq_redis = request.app.state.arq_redis
+        await arq_redis.enqueue_job("classify_ticket", ticket.id)
+    except Exception:
+        logger.exception("Failed to enqueue classification for ticket %s", ticket.id)
     response.status_code = status.HTTP_201_CREATED
     return ticket

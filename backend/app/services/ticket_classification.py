@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 CATEGORY_VALUES = [c.value for c in TicketCategory]
 
 
-async def classify_ticket(ticket_id: uuid.UUID) -> None:
+async def classify_ticket(ctx: dict, ticket_id: uuid.UUID) -> None:
     if not settings.OPENAI_API_KEY:
         return
 
