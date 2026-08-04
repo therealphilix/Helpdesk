@@ -27,7 +27,7 @@ async def test_inbound_email_creates_ticket(
     assert data["sender_email"] == "student@university.edu"
     assert data["sender_name"] == "Jane Doe"
     assert data["subject"] == "Cannot access my course materials"
-    assert data["status"] == "open"
+    assert data["status"] == "new"
     assert data["category"] is None
     assert data["assigned_to"] is None
     assert data["body_html"] is None
@@ -40,7 +40,7 @@ async def test_inbound_email_creates_ticket(
     )
     ticket = result.scalar_one()
     assert ticket.sender_email == "student@university.edu"
-    assert ticket.status == TicketStatus.OPEN
+    assert ticket.status == TicketStatus.NEW
 
 
 async def test_inbound_email_missing_required_fields(client: AsyncClient):

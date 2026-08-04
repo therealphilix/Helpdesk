@@ -34,7 +34,7 @@ async def inbound_email(
         select(Ticket).where(
             Ticket.sender_email == body.sender_email,
             Ticket.subject == body.subject,
-            Ticket.status == TicketStatus.OPEN
+            Ticket.status.in_([TicketStatus.NEW, TicketStatus.PROCESSING, TicketStatus.OPEN])
         )
     )
     for ticket in existing.scalars().all():
@@ -71,7 +71,8 @@ async def inbound_email(
     try:
         arq_redis = request.app.state.arq_redis
         await arq_redis.enqueue_job("classify_ticket", ticket.id)
+        await arq_redis.enqueue_job("auto_resolve_ticket", ticket.id)
     except Exception:
-        logger.exception("Failed to enqueue classification for ticket %s", ticket.id)
+        logger.exception("Failed to enqueue jobs for ticket %s", ticket.id)
     response.status_code = status.HTTP_201_CREATED
     return ticket

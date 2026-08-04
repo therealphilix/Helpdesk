@@ -7,6 +7,8 @@ class UserRole(str, enum.Enum):
 
 
 class TicketStatus(str, enum.Enum):
+    NEW = "new"
+    PROCESSING = "processing"
     OPEN = "open"
     RESOLVED = "resolved"
     CLOSED = "closed"

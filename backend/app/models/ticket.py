@@ -18,7 +18,7 @@ class Ticket(Base):
     subject: Mapped[str] = mapped_column(Text, nullable=False)
     body_text: Mapped[str] = mapped_column(Text, nullable=False)
     body_html: Mapped[str | None] = mapped_column(Text, nullable=True)
-    status: Mapped[TicketStatus] = mapped_column(String(20), nullable=False, default=TicketStatus.OPEN)
+    status: Mapped[TicketStatus] = mapped_column(String(20), nullable=False, default=TicketStatus.NEW)
     category: Mapped[TicketCategory | None] = mapped_column(String(30), nullable=True, default=None)
     assigned_to: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

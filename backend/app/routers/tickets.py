@@ -31,6 +31,7 @@ _SORT_COLUMNS = {
 
 
 def _build_filter(query, status, category, search):
+    query = query.where(Ticket.status.notin_([TicketStatus.NEW, TicketStatus.PROCESSING]))
     if status is not None:
         query = query.where(Ticket.status == status)
     if category is not None:

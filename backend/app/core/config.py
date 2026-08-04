@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     OPENAI_BASE_URL: str = "https://api.deepseek.com"
     OPENAI_MODEL: str = "deepseek-v4-flash"
+    KNOWLEDGE_BASE_PATH: str = "../backend/knowledge-base.md"
     ANTHROPIC_API_KEY: str = ""
     WEBHOOK_SECRET: str = ""
 

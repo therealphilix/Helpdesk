@@ -36,7 +36,7 @@ export function ReplyThread({ ticket }: { ticket: Pick<Ticket, "replies" | "send
                 dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(reply.body_html) }}
               />
             ) : (
-              <div>
+              <div className="text-sm whitespace-pre-wrap">
                 {reply.body_text}
               </div>
             )}

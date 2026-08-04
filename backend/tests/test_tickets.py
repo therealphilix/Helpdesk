@@ -20,6 +20,7 @@ async def _create_ticket(
         sender_name=sender_name,
         subject=subject,
         body_text=body_text,
+        status=TicketStatus.OPEN,
     )
     db_session.add(ticket)
     await db_session.commit()
