@@ -45,14 +45,14 @@ export function LoginPage() {
   });
 
   if (user) {
-    navigate({ to: "/", replace: true });
+    navigate({ to: "/dashboard", replace: true });
     return null;
   }
 
   const onSubmit = async (data: LoginFormData) => {
     try {
       await login(data.email, data.password);
-      navigate({ to: "/" });
+      navigate({ to: "/dashboard" });
     } catch (err) {
       const axiosErr = err as AxiosError<{ detail: string }>;
       setError("root", {

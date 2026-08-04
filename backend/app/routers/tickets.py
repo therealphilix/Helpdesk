@@ -89,7 +89,7 @@ async def list_agents(
 ):
     result = await db.execute(
         select(User)
-        .where(User.role == UserRole.AGENT, User.deleted_at.is_(None))
+        .where(User.role == UserRole.AGENT, User.deleted_at.is_(None), User.email != "ai@helpdesk.com")
         .order_by(User.name)
     )
     return result.scalars().all()

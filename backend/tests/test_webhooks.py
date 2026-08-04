@@ -4,13 +4,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.ticket import Ticket
 from app.models.ticket_reply import TicketReply
+from app.models.user import User
 from app.models.enums import SenderType, TicketStatus
 
 WEBHOOK_HEADERS = {"X-Webhook-Secret": "test-webhook-secret"}
 
 
 async def test_inbound_email_creates_ticket(
-    client: AsyncClient, db_session: AsyncSession
+    client: AsyncClient, db_session: AsyncSession, ai_agent_user: User
 ):
     resp = await client.post(
         "/api/webhooks/email",
@@ -29,7 +30,7 @@ async def test_inbound_email_creates_ticket(
     assert data["subject"] == "Cannot access my course materials"
     assert data["status"] == "new"
     assert data["category"] is None
-    assert data["assigned_to"] is None
+    assert data["assigned_to"] == str(ai_agent_user.id)
     assert data["body_html"] is None
     assert "id" in data
     assert "created_at" in data
@@ -41,6 +42,7 @@ async def test_inbound_email_creates_ticket(
     ticket = result.scalar_one()
     assert ticket.sender_email == "student@university.edu"
     assert ticket.status == TicketStatus.NEW
+    assert ticket.assigned_to == ai_agent_user.id
 
 
 async def test_inbound_email_missing_required_fields(client: AsyncClient):
@@ -55,7 +57,7 @@ async def test_inbound_email_missing_required_fields(client: AsyncClient):
 
 
 async def test_inbound_email_duplicate_is_idempotent(
-    client: AsyncClient, db_session: AsyncSession
+    client: AsyncClient, db_session: AsyncSession, ai_agent_user: User
 ):
     payload = {
         "sender_email": "dup@university.edu",
@@ -76,7 +78,7 @@ async def test_inbound_email_duplicate_is_idempotent(
 
 
 async def test_inbound_email_different_body_creates_reply(
-    client: AsyncClient, db_session: AsyncSession
+    client: AsyncClient, db_session: AsyncSession, ai_agent_user: User
 ):
     resp1 = await client.post(
         "/api/webhooks/email",
@@ -115,7 +117,7 @@ async def test_inbound_email_different_body_creates_reply(
 
 
 async def test_inbound_email_reply_updates_sender_name(
-    client: AsyncClient, db_session: AsyncSession
+    client: AsyncClient, db_session: AsyncSession, ai_agent_user: User
 ):
     resp1 = await client.post(
         "/api/webhooks/email",
@@ -143,7 +145,7 @@ async def test_inbound_email_reply_updates_sender_name(
     assert resp2.json()["sender_name"] == "New Name"
 
 
-async def test_inbound_email_minimal_fields(client: AsyncClient):
+async def test_inbound_email_minimal_fields(client: AsyncClient, ai_agent_user: User):
     resp = await client.post(
         "/api/webhooks/email",
         json={

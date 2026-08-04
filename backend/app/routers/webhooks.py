@@ -10,6 +10,7 @@ from ..core.dependencies import verify_webhook_secret
 from ..models.enums import SenderType, TicketStatus
 from ..models.ticket import Ticket
 from ..models.ticket_reply import TicketReply
+from ..models.user import User
 from ..schemas.ticket import InboundEmail, TicketOut
 
 logger = logging.getLogger(__name__)
@@ -65,6 +66,12 @@ async def inbound_email(
         body_text=body.body_text,
         body_html=body.body_html,
     )
+
+    ai_result = await db.execute(select(User).where(User.email == "ai@helpdesk.com"))
+    ai_agent = ai_result.scalar_one_or_none()
+    if ai_agent:
+        ticket.assigned_to = ai_agent.id
+
     db.add(ticket)
     await db.commit()
     await db.refresh(ticket)

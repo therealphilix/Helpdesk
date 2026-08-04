@@ -44,11 +44,24 @@ export interface ReplyOut {
   created_at: string
 }
 
+export interface DashboardStats {
+  total_tickets: number
+  open_tickets: number
+  ai_resolved_count: number
+  ai_resolved_percentage: number
+  avg_resolution_time_hours: number
+}
+
 export const categoryOptions: { value: string; label: string }[] = [
   { value: "general question", label: "General Question" },
   { value: "technical question", label: "Technical Question" },
   { value: "refund request", label: "Refund Request" },
 ]
+
+export interface TicketsPerDayEntry {
+  date: string
+  count: number
+}
 
 export interface Ticket {
   id: string

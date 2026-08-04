@@ -3,6 +3,7 @@ import {
   createRootRoute,
   createRoute,
 } from "@tanstack/react-router";
+import { DashboardPage } from "./routes/DashboardPage";
 import { HomePage } from "./routes/HomePage";
 import { LoginPage } from "./routes/LoginPage";
 import { TicketDetailPage } from "./routes/TicketDetailPage";
@@ -23,6 +24,12 @@ const loginRoute = createRoute({
   component: LoginPage,
 });
 
+const dashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/dashboard",
+  component: DashboardPage,
+});
+
 const ticketsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/tickets",
@@ -41,7 +48,7 @@ const usersRoute = createRoute({
   component: UsersPage,
 });
 
-const routeTree = rootRoute.addChildren([indexRoute, loginRoute, ticketsRoute, ticketDetailRoute, usersRoute]);
+const routeTree = rootRoute.addChildren([indexRoute, loginRoute, dashboardRoute, ticketsRoute, ticketDetailRoute, usersRoute]);
 
 export const router = createRouter({
   routeTree,

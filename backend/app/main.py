@@ -13,7 +13,7 @@ from .core.config import settings
 from .core.csrf import OriginGuard
 from .core.database import engine
 from .core.limiter import limiter
-from .routers import auth, tickets, users, webhooks
+from .routers import auth, dashboard, tickets, users, webhooks
 from .services.session_cleanup import periodic_session_cleanup
 
 
@@ -64,6 +64,7 @@ app.state.limiter = limiter
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(webhooks.router, prefix="/api/webhooks", tags=["webhooks"])
+app.include_router(dashboard.router, prefix="/api/dashboard", tags=["dashboard"])
 app.include_router(tickets.router, prefix="/api/tickets", tags=["tickets"])
 
 

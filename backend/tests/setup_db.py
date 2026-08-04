@@ -126,6 +126,18 @@ async def _seed_users() -> None:
             )
             print("[setup_db] Seeded agent user: agent@test.com / AgentPass123!")
 
+        result = await db.execute(select(User).where(User.email == "ai@helpdesk.com"))
+        if result.scalar_one_or_none() is None:
+            db.add(
+                User(
+                    email="ai@helpdesk.com",
+                    name="AI Assistant",
+                    password_hash=hash_password("AIAgent_Secret123!"),
+                    role=UserRole.AGENT,
+                )
+            )
+            print("[setup_db] Seeded AI agent: ai@helpdesk.com")
+
         await db.commit()
 
 

@@ -106,8 +106,10 @@ async def auto_resolve_ticket(ctx: dict, ticket_id: uuid.UUID) -> None:
                 logger.info("Ticket %s could not be auto-resolved, setting to open", ticket_id)
                 async with db.begin():
                     ticket.status = TicketStatus.OPEN
+                    ticket.assigned_to = None
 
         except Exception:
             logger.exception("Auto-resolve failed for ticket %s, setting to open", ticket_id)
             async with db.begin():
                 ticket.status = TicketStatus.OPEN
+                ticket.assigned_to = None
