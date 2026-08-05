@@ -13,6 +13,35 @@ _SUBJECT_PREFIX_RE = re.compile(
 )
 
 
+class ResendAttachment(BaseModel):
+    id: str
+    filename: str
+    content_type: str
+    content_disposition: str | None = None
+    content_id: str | None = None
+
+
+class ResendWebhookData(BaseModel):
+    email_id: str
+    created_at: str | None = None
+    from_: str = Field(alias="from")
+    to: list[str] = Field(default_factory=list)
+    bcc: list[str] = Field(default_factory=list)
+    cc: list[str] = Field(default_factory=list)
+    received_for: list[str] = Field(default_factory=list)
+    message_id: str | None = None
+    subject: str | None = None
+    attachments: list[ResendAttachment] = Field(default_factory=list)
+    body_text: str | None = None
+    body_html: str | None = None
+
+
+class ResendWebhookPayload(BaseModel):
+    type: str
+    created_at: str | None = None
+    data: ResendWebhookData
+
+
 class InboundEmail(BaseModel):
     sender_email: EmailStr = Field(max_length=255)
     sender_name: str | None = Field(default=None, max_length=255)

@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     KNOWLEDGE_BASE_PATH: str = "../backend/knowledge-base.md"
     ANTHROPIC_API_KEY: str = ""
     WEBHOOK_SECRET: str = ""
+    RESEND_WEBHOOK_SECRET: str = ""
 
     model_config = {
         "env_file": os.getenv("ENV_FILE", "../.env"),

@@ -10,17 +10,37 @@ from app.models.enums import SenderType, TicketStatus
 WEBHOOK_HEADERS = {"X-Webhook-Secret": "test-webhook-secret"}
 
 
+def _payload(
+    from_: str,
+    subject: str,
+    body_text: str,
+    body_html: str | None = None,
+    email_id: str = "test-email-001",
+) -> dict:
+    return {
+        "type": "email.received",
+        "created_at": "2026-08-05T12:00:00Z",
+        "data": {
+            "email_id": email_id,
+            "from": from_,
+            "to": ["support@helpdesk.com"],
+            "subject": subject,
+            "body_text": body_text,
+            "body_html": body_html,
+        },
+    }
+
+
 async def test_inbound_email_creates_ticket(
     client: AsyncClient, db_session: AsyncSession, ai_agent_user: User
 ):
     resp = await client.post(
         "/api/webhooks/email",
-        json={
-            "sender_email": "student@university.edu",
-            "sender_name": "Jane Doe",
-            "subject": "Cannot access my course materials",
-            "body_text": "Hi, I'm unable to open the lecture slides for CS101. Can you help?",
-        },
+        json=_payload(
+            from_="Jane Doe <student@university.edu>",
+            subject="Cannot access my course materials",
+            body_text="Hi, I'm unable to open the lecture slides for CS101. Can you help?",
+        ),
         headers=WEBHOOK_HEADERS,
     )
     assert resp.status_code == 201
@@ -48,9 +68,7 @@ async def test_inbound_email_creates_ticket(
 async def test_inbound_email_missing_required_fields(client: AsyncClient):
     resp = await client.post(
         "/api/webhooks/email",
-        json={
-            "sender_email": "student@university.edu",
-        },
+        json={"not": "a valid payload"},
         headers=WEBHOOK_HEADERS,
     )
     assert resp.status_code == 422
@@ -59,12 +77,11 @@ async def test_inbound_email_missing_required_fields(client: AsyncClient):
 async def test_inbound_email_duplicate_is_idempotent(
     client: AsyncClient, db_session: AsyncSession, ai_agent_user: User
 ):
-    payload = {
-        "sender_email": "dup@university.edu",
-        "sender_name": "Duplicate User",
-        "subject": "Help with enrollment",
-        "body_text": "I need help enrolling in a course.",
-    }
+    payload = _payload(
+        from_="Duplicate User <dup@university.edu>",
+        subject="Help with enrollment",
+        body_text="I need help enrolling in a course.",
+    )
 
     resp1 = await client.post("/api/webhooks/email", json=payload, headers=WEBHOOK_HEADERS)
     assert resp1.status_code == 201
@@ -82,11 +99,11 @@ async def test_inbound_email_different_body_creates_reply(
 ):
     resp1 = await client.post(
         "/api/webhooks/email",
-        json={
-            "sender_email": "multi@university.edu",
-            "subject": "Billing question",
-            "body_text": "I was charged twice for this month.",
-        },
+        json=_payload(
+            from_="multi@university.edu",
+            subject="Billing question",
+            body_text="I was charged twice for this month.",
+        ),
         headers=WEBHOOK_HEADERS,
     )
     assert resp1.status_code == 201
@@ -94,11 +111,12 @@ async def test_inbound_email_different_body_creates_reply(
 
     resp2 = await client.post(
         "/api/webhooks/email",
-        json={
-            "sender_email": "multi@university.edu",
-            "subject": "Billing question",
-            "body_text": "When will my refund be processed?",
-        },
+        json=_payload(
+            from_="multi@university.edu",
+            subject="Billing question",
+            body_text="When will my refund be processed?",
+            email_id="test-email-002",
+        ),
         headers=WEBHOOK_HEADERS,
     )
     assert resp2.status_code == 200
@@ -121,24 +139,23 @@ async def test_inbound_email_reply_updates_sender_name(
 ):
     resp1 = await client.post(
         "/api/webhooks/email",
-        json={
-            "sender_email": "changer@university.edu",
-            "sender_name": "Old Name",
-            "subject": "Name change",
-            "body_text": "First message.",
-        },
+        json=_payload(
+            from_="Old Name <changer@university.edu>",
+            subject="Name change",
+            body_text="First message.",
+        ),
         headers=WEBHOOK_HEADERS,
     )
     assert resp1.status_code == 201
 
     resp2 = await client.post(
         "/api/webhooks/email",
-        json={
-            "sender_email": "changer@university.edu",
-            "sender_name": "New Name",
-            "subject": "Name change",
-            "body_text": "Follow-up message.",
-        },
+        json=_payload(
+            from_="New Name <changer@university.edu>",
+            subject="Name change",
+            body_text="Follow-up message.",
+            email_id="test-email-003",
+        ),
         headers=WEBHOOK_HEADERS,
     )
     assert resp2.status_code == 200
@@ -148,11 +165,11 @@ async def test_inbound_email_reply_updates_sender_name(
 async def test_inbound_email_minimal_fields(client: AsyncClient, ai_agent_user: User):
     resp = await client.post(
         "/api/webhooks/email",
-        json={
-            "sender_email": "minimal@university.edu",
-            "subject": "x",
-            "body_text": "x",
-        },
+        json=_payload(
+            from_="minimal@university.edu",
+            subject="x",
+            body_text="x",
+        ),
         headers=WEBHOOK_HEADERS,
     )
     assert resp.status_code == 201
@@ -164,11 +181,11 @@ async def test_inbound_email_minimal_fields(client: AsyncClient, ai_agent_user: 
 async def test_webhook_missing_secret_header(client: AsyncClient):
     resp = await client.post(
         "/api/webhooks/email",
-        json={
-            "sender_email": "student@university.edu",
-            "subject": "Test",
-            "body_text": "Hello",
-        },
+        json=_payload(
+            from_="student@university.edu",
+            subject="Test",
+            body_text="Hello",
+        ),
     )
     assert resp.status_code == 401
 
@@ -176,11 +193,38 @@ async def test_webhook_missing_secret_header(client: AsyncClient):
 async def test_webhook_invalid_secret_header(client: AsyncClient):
     resp = await client.post(
         "/api/webhooks/email",
-        json={
-            "sender_email": "student@university.edu",
-            "subject": "Test",
-            "body_text": "Hello",
-        },
+        json=_payload(
+            from_="student@university.edu",
+            subject="Test",
+            body_text="Hello",
+        ),
         headers={"X-Webhook-Secret": "wrong-secret"},
     )
     assert resp.status_code == 401
+
+
+async def test_webhook_ignores_non_email_event(client: AsyncClient):
+    resp = await client.post(
+        "/api/webhooks/email",
+        json={
+            "type": "email.delivered",
+            "data": {"email_id": "xxx", "from": "a@b.com"},
+        },
+        headers=WEBHOOK_HEADERS,
+    )
+    assert resp.status_code == 200
+    assert resp.json() == {"status": "ignored", "type": "email.delivered"}
+
+
+async def test_inbound_email_strips_re_prefixes(client: AsyncClient, ai_agent_user: User):
+    resp = await client.post(
+        "/api/webhooks/email",
+        json=_payload(
+            from_="student@university.edu",
+            subject="Re: Fwd: RE: Actual Subject",
+            body_text="Body content.",
+        ),
+        headers=WEBHOOK_HEADERS,
+    )
+    assert resp.status_code == 201
+    assert resp.json()["subject"] == "Actual Subject"
