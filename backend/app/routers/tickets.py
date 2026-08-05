@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from openai import AsyncOpenAI
 from sqlalchemy import asc, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -190,6 +190,7 @@ async def create_reply(
     body: ReplyCreate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
 ):
     ticket = await db.get(Ticket, ticket_id)
     if not ticket:
@@ -208,6 +209,13 @@ async def create_reply(
 
     author = await db.get(User, current_user.id)
     reply.author = author
+
+    try:
+        arq_redis = getattr(request.app.state, "arq_redis", None) if request else None
+        if arq_redis:
+            await arq_redis.enqueue_job("send_reply_email", ticket_id, body.body_text, body.body_html)
+    except Exception:
+        pass
 
     return reply
 

@@ -102,6 +102,11 @@ async def auto_resolve_ticket(ctx: dict, ticket_id: uuid.UUID) -> None:
                     )
                     db.add(reply)
                     ticket.status = TicketStatus.RESOLVED
+
+                try:
+                    await ctx["redis"].enqueue_job("send_reply_email", ticket_id, formatted_reply)
+                except Exception:
+                    logger.exception("Failed to enqueue send_reply_email for ticket %s", ticket_id)
             else:
                 logger.info("Ticket %s could not be auto-resolved, setting to open", ticket_id)
                 async with db.begin():

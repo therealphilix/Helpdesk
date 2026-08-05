@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = ""
     WEBHOOK_SECRET: str = ""
     RESEND_WEBHOOK_SECRET: str = ""
+    FROM_EMAIL: str = "Helpdesk <support@helpdesk.com>"
 
     model_config = {
         "env_file": os.getenv("ENV_FILE", "../.env"),
