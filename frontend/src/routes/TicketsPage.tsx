@@ -18,7 +18,7 @@ export function TicketsPage() {
     navigate({ to: "/login", replace: true });
     return null;
   }
-
+  
   return (
     <div>
       <Navbar />

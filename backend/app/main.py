@@ -4,6 +4,8 @@ from contextlib import asynccontextmanager
 from arq import create_pool
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import sentry_sdk
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIASGIMiddleware
@@ -15,6 +17,15 @@ from .core.database import engine
 from .core.limiter import limiter
 from .routers import auth, dashboard, tickets, users, webhooks
 from .services.session_cleanup import periodic_session_cleanup
+
+if settings.SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        environment=settings.ENVIRONMENT,
+        traces_sample_rate=1.0 if settings.ENVIRONMENT == "development" else 0.1,
+        send_default_pii=False,
+        integrations=[SqlalchemyIntegration()],
+    )
 
 
 @asynccontextmanager

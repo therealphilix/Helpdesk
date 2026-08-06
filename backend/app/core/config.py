@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     WEBHOOK_SECRET: str = ""
     RESEND_WEBHOOK_SECRET: str = ""
     FROM_EMAIL: str = "Helpdesk <support@helpdesk.com>"
+    SENTRY_DSN: str = ""
 
     model_config = {
         "env_file": os.getenv("ENV_FILE", "../.env"),

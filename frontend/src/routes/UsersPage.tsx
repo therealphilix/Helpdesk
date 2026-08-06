@@ -41,7 +41,7 @@ export function UsersPage() {
 
 function UserList() {
   const [dialogOpen, setDialogOpen] = useState(false);
-
+  
   return (
     <Card className="border-0 shadow-none">
       <CardHeader className="flex-row items-center justify-between">

@@ -20,7 +20,7 @@ from ..schemas.ticket import InboundEmail, ResendWebhookPayload, TicketOut
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
-
+ 
 
 def _body_hash(body_text: str) -> str:
     return hashlib.sha256(body_text.encode()).hexdigest()
