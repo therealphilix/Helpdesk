@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import * as Sentry from "@sentry/react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { router } from "./router";
 
 function AuthGate({ children }: { children: ReactNode }) {
@@ -42,11 +43,13 @@ export function App() {
   return (
     <Sentry.ErrorBoundary fallback={<ErrorFallback />}>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <AuthGate>
-            <RouterProvider router={router} />
-          </AuthGate>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <AuthGate>
+              <RouterProvider router={router} />
+            </AuthGate>
+          </AuthProvider>
+        </ThemeProvider>
       </QueryClientProvider>
     </Sentry.ErrorBoundary>
   );

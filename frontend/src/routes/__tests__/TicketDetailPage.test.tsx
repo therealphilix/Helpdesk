@@ -9,6 +9,7 @@ const { navigateMock } = vi.hoisted(() => ({
 
 vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => navigateMock,
+  useLocation: () => ({ pathname: "/tickets/ticket-1" }),
   useParams: () => ({ ticketId: "ticket-1" }),
   Link: ({ to, children, ...props }: any) =>
     <a href={to} {...props}>{children}</a>,
@@ -16,6 +17,10 @@ vi.mock("@tanstack/react-router", () => ({
 
 vi.mock("../../contexts/AuthContext", () => ({
   useAuth: vi.fn(),
+}))
+
+vi.mock("../../contexts/ThemeContext", () => ({
+  useTheme: () => ({ theme: "light", toggle: vi.fn() }),
 }))
 
 const { useQueryMock, useMutationMock, queryClientInvalidateMock } = vi.hoisted(() => ({
@@ -120,7 +125,7 @@ describe("TicketDetailPage rendering", () => {
     useMutationMock.mockReturnValue({ mutate: vi.fn(), isPending: false })
   })
 
-  it("renders the Navbar", () => {
+  it("renders the Sidebar", () => {
     render(<TicketDetailPage />)
     expect(screen.getByText("Helpdesk")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Sign Out" })).toBeInTheDocument()

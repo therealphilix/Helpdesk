@@ -9,12 +9,17 @@ const { navigateMock } = vi.hoisted(() => ({
 
 vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => navigateMock,
+  useLocation: () => ({ pathname: "/users" }),
   Link: ({ to, children, ...props }: any) =>
     <a href={to} {...props}>{children}</a>,
 }));
 
 vi.mock("../../contexts/AuthContext", () => ({
   useAuth: vi.fn(),
+}));
+
+vi.mock("../../contexts/ThemeContext", () => ({
+  useTheme: () => ({ theme: "light", toggle: vi.fn() }),
 }));
 
 const { useQueryMock, useMutationMock, useQueryClientMock, invalidateQueriesMock } = vi.hoisted(() => ({
@@ -85,7 +90,7 @@ describe("UsersPage", () => {
     mockUseMutation();
   });
 
-  it("renders the Navbar", () => {
+  it("renders the Sidebar", () => {
     render(<UsersPage />);
     expect(screen.getByText("Helpdesk")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sign Out" })).toBeInTheDocument();
@@ -93,9 +98,8 @@ describe("UsersPage", () => {
 
   it("renders the page title and description", () => {
     render(<UsersPage />);
-    const card = screen.getByText("Manage user accounts and their roles.").closest("[data-slot='card']") as HTMLElement;
-    expect(card).toBeInTheDocument();
-    expect(within(card).getByText("Users")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Users" })).toBeInTheDocument();
+    expect(screen.getByText("Manage user accounts and their roles.")).toBeInTheDocument();
   });
 
   it("renders the Create User button", () => {
@@ -257,8 +261,8 @@ describe("UserList data state", () => {
     );
 
     expect(adminBadge).toBeTruthy();
-    expect(adminBadge!.className).toContain("bg-black");
-    expect(adminBadge!.className).toContain("text-white");
+    expect(adminBadge!.className).toContain("bg-primary/10");
+    expect(adminBadge!.className).toContain("text-primary");
     expect(agentBadges).toHaveLength(1);
     agentBadges.forEach((b) => {
       expect(b.className).toContain("bg-muted");

@@ -1,13 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "../contexts/AuthContext";
-import { Navbar } from "../components/Navbar";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { AppLayout } from "../components/AppLayout";
 import { TicketsTable } from "../components/TicketsTable";
 
 export function TicketsPage() {
@@ -20,21 +13,12 @@ export function TicketsPage() {
   }
   
   return (
-    <div>
-      <Navbar />
-      <main className="p-6 max-w-6xl mx-auto">
-        <Card className="border-0 shadow-none">
-          <CardHeader>
-            <CardTitle className="text-3xl">Tickets</CardTitle>
-            <CardDescription>
-              View and manage support tickets.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <TicketsTable />
-          </CardContent>
-        </Card>
-      </main>
-    </div>
+    <AppLayout>
+      <h1 className="text-2xl font-medium tracking-tight mb-1">Tickets</h1>
+      <p className="text-muted-foreground text-sm mb-6">
+        View and manage support tickets.
+      </p>
+      <TicketsTable />
+    </AppLayout>
   );
 }

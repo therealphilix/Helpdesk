@@ -2,7 +2,7 @@ import { useNavigate, useParams } from "@tanstack/react-router"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { type AxiosError } from "axios"
 import { useAuth } from "../contexts/AuthContext"
-import { Navbar } from "../components/Navbar"
+import { AppLayout } from "../components/AppLayout"
 import { BackLink } from "../components/BackLink"
 import { ReplyThread } from "../components/ReplyThread"
 import { ReplyForm } from "../components/ReplyForm"
@@ -55,10 +55,8 @@ export function TicketDetailPage() {
   }
 
   return (
-    <div>
-      <Navbar />
-      <main className="p-6 max-w-6xl mx-auto">
-        <BackLink to="/tickets">Back to tickets</BackLink>
+    <AppLayout>
+      <BackLink to="/tickets">Back to tickets</BackLink>
 
         {isLoading && <TicketDetailSkeleton />}
 
@@ -91,7 +89,6 @@ export function TicketDetailPage() {
             </div>
           </div>
         )}
-      </main>
-    </div>
+    </AppLayout>
   )
 }

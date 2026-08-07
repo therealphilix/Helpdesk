@@ -101,7 +101,6 @@ export function UsersTable() {
                   <TableCell>
                     <Badge
                       variant={u.role === UserRole.ADMIN ? "default" : "secondary"}
-                      className={u.role === UserRole.ADMIN ? "bg-black text-white" : undefined}
                     >
                       {u.role}
                     </Badge>

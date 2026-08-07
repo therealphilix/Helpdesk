@@ -3,14 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { UserRole } from "../lib/roles";
-import { Navbar } from "../components/Navbar";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { AppLayout } from "../components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { CreateUserDialog } from "../components/CreateUserDialog";
 import { UsersTable } from "../components/UsersTable";
@@ -30,12 +23,9 @@ export function UsersPage() {
   }
 
   return (
-    <div>
-      <Navbar />
-      <main className="p-6 max-w-6xl mx-auto">
-        <UserList />
-      </main>
-    </div>
+    <AppLayout>
+      <UserList />
+    </AppLayout>
   );
 }
 
@@ -43,23 +33,21 @@ function UserList() {
   const [dialogOpen, setDialogOpen] = useState(false);
   
   return (
-    <Card className="border-0 shadow-none">
-      <CardHeader className="flex-row items-center justify-between">
-        <div className="flex flex-col gap-1.5">
-          <CardTitle className="text-3xl">Users</CardTitle>
-          <CardDescription>
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-medium tracking-tight">Users</h1>
+          <p className="text-muted-foreground text-sm mt-1">
             Manage user accounts and their roles.
-          </CardDescription>
+          </p>
         </div>
         <Button onClick={() => setDialogOpen(true)}>
           <Plus className="size-4" />
           Create User
         </Button>
-      </CardHeader>
-      <CardContent>
-        <UsersTable />
-        <CreateUserDialog open={dialogOpen} onOpenChange={setDialogOpen} />
-      </CardContent>
-    </Card>
+      </div>
+      <UsersTable />
+      <CreateUserDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+    </div>
   );
 }

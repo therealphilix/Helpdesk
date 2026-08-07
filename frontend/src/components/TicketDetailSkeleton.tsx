@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export function TicketDetailSkeleton() {
   return (
-    <Card className="border-0 shadow-none">
+    <Card>
       <CardHeader>
         <Skeleton className="h-7 w-3/4" />
         <Skeleton className="h-4 w-1/3 mt-2" />

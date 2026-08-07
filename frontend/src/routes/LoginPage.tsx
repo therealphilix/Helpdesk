@@ -62,7 +62,17 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+      <div className="accent-strip fixed left-0 top-0 z-50 w-full" />
+      <div className="mb-8 flex items-center gap-2.5">
+        <div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+          <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21.2 8.5c.6.6.6 1.5 0 2.1l-2.8 2.8c-.3.3-.3.8 0 1.1l2.8 2.8c.6.6.6 1.5 0 2.1L18.5 22c-.6.6-1.5.6-2.1 0l-2.8-2.8c-.3-.3-.8-.3-1.1 0L9.7 22c-.6.6-1.5.6-2.1 0l-2.7-2.7c-.6-.6-.6-1.5 0-2.1l2.8-2.8c.3-.3.3-.8 0-1.1L4.9 10.5c-.6-.6-.6-1.5 0-2.1L7.6 5.7c.6-.6 1.5-.6 2.1 0l2.8 2.8c.3.3.8.3 1.1 0l2.8-2.8c.6-.6 1.5-.6 2.1 0l2.7 2.8Z" />
+            <circle cx="12" cy="12" r="2" />
+          </svg>
+        </div>
+        <h1 className="text-xl font-semibold tracking-tight">Helpdesk</h1>
+      </div>
       <form
         noValidate
         onSubmit={handleSubmit(onSubmit)}
@@ -70,9 +80,9 @@ export function LoginPage() {
       >
         <Card>
           <CardHeader className="text-center">
-            <CardTitle>Helpdesk Login</CardTitle>
+            <CardTitle>Sign in</CardTitle>
             <CardDescription>
-              Enter your credentials to access the helpdesk
+              Enter your credentials to access your account
             </CardDescription>
           </CardHeader>
 

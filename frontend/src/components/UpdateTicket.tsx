@@ -37,7 +37,7 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
 
 export function UpdateTicket({ ticket, agents, isPending, onUpdate }: UpdateTicketProps) {
   return (
-    <Card className="border-0 shadow-none">
+    <Card>
       <CardContent className="flex flex-col gap-4">
         <DetailRow label="Status">
           <div className="flex items-center gap-2">

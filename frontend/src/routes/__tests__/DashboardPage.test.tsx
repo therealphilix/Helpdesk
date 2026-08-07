@@ -8,12 +8,17 @@ const { navigateMock } = vi.hoisted(() => ({
 
 vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => navigateMock,
+  useLocation: () => ({ pathname: "/dashboard" }),
   Link: ({ to, children, ...props }: any) =>
     <a href={to} {...props}>{children}</a>,
 }));
 
 vi.mock("../../contexts/AuthContext", () => ({
   useAuth: vi.fn(),
+}));
+
+vi.mock("../../contexts/ThemeContext", () => ({
+  useTheme: () => ({ theme: "light", toggle: vi.fn() }),
 }));
 
 const { useQueryMock } = vi.hoisted(() => ({
@@ -75,7 +80,7 @@ describe("DashboardPage rendering", () => {
     mockUseQuery({});
   });
 
-  it("renders the Navbar with Helpdesk brand", () => {
+  it("renders the Sidebar with Helpdesk brand", () => {
     render(<DashboardPage />);
     expect(screen.getByText("Helpdesk")).toBeInTheDocument();
   });
@@ -85,9 +90,9 @@ describe("DashboardPage rendering", () => {
     expect(screen.getByRole("heading", { name: "Dashboard" })).toBeInTheDocument();
   });
 
-  it("renders navbar links", () => {
+  it("renders sidebar navigation links", () => {
     render(<DashboardPage />);
-    expect(screen.getByRole("link", { name: "Helpdesk" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Dashboard" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Tickets" })).toBeInTheDocument();
   });
 });

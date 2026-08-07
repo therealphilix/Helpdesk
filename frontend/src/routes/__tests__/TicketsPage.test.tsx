@@ -9,12 +9,17 @@ const { navigateMock } = vi.hoisted(() => ({
 
 vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => navigateMock,
+  useLocation: () => ({ pathname: "/tickets" }),
   Link: ({ to, children, ...props }: any) =>
     <a href={to} {...props}>{children}</a>,
 }));
 
 vi.mock("../../contexts/AuthContext", () => ({
   useAuth: vi.fn(),
+}));
+
+vi.mock("../../contexts/ThemeContext", () => ({
+  useTheme: () => ({ theme: "light", toggle: vi.fn() }),
 }));
 
 const { useQueryMock } = vi.hoisted(() => ({
@@ -83,22 +88,21 @@ describe("TicketsPage rendering", () => {
     mockUseQuery({});
   });
 
-  it("renders the Navbar", () => {
+  it("renders the Sidebar", () => {
     render(<TicketsPage />);
     expect(screen.getByText("Helpdesk")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sign Out" })).toBeInTheDocument();
   });
 
-  it("renders the Tickets link in the navbar", () => {
+  it("renders the Tickets link in the sidebar", () => {
     render(<TicketsPage />);
     expect(screen.getByRole("link", { name: "Tickets" })).toBeInTheDocument();
   });
 
   it("renders the page title and description", () => {
     render(<TicketsPage />);
-    const card = screen.getByText("View and manage support tickets.").closest("[data-slot='card']") as HTMLElement;
-    expect(card).toBeInTheDocument();
-    expect(within(card).getByText("Tickets")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Tickets" })).toBeInTheDocument();
+    expect(screen.getByText("View and manage support tickets.")).toBeInTheDocument();
   });
 });
 

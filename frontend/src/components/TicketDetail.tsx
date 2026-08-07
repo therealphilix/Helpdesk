@@ -20,7 +20,7 @@ export function TicketDetail({ ticket }: { ticket: Ticket }) {
   })
 
   return (
-    <Card className="border-0 shadow-none">
+    <Card>
       <CardHeader>
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
