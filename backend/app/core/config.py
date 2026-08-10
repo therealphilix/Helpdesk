@@ -32,6 +32,14 @@ class Settings(BaseSettings):
     }
 
     @model_validator(mode="after")
+    def _normalize_database_url(self) -> "Settings":
+        if self.DATABASE_URL.startswith("postgres://"):
+            self.DATABASE_URL = self.DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif self.DATABASE_URL.startswith("postgresql://") and "+asyncpg" not in self.DATABASE_URL:
+            self.DATABASE_URL = self.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return self
+
+    @model_validator(mode="after")
     def _assert_secret_key(self) -> "Settings":
         if self.SECRET_KEY == "change-me-in-production":
             raise ValueError("SECRET_KEY must be changed. Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(64))\"")

@@ -250,14 +250,14 @@ async def polish_reply(
     try:
         first_name = ticket.sender_name.split(" ")[0] if ticket.sender_name else "there"
         salutation = f"Hi {first_name},\n\n"
-        signature = f"\n\nBest regards,\n{current_user.name}\nhttps://helpdesk.com"
+        signature = f"\n\nBest regards,\n{current_user.name}\nSupport Team"
         draft = body.draft.removeprefix(salutation).removesuffix(signature)
 
         user_message = (
             f"Ticket subject: {ticket.subject}\n"
             f"Ticket body: {ticket.body_text}\n"
             f"Category: {ticket.category or 'N/A'}\n"
-            f"\n"
+            f"\n" 
             f"Agent's draft reply:\n{draft}"
         )
 
