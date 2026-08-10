@@ -3,10 +3,9 @@ import os
 from contextlib import asynccontextmanager
 
 from arq import create_pool
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 import sentry_sdk
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from slowapi import _rate_limit_exceeded_handler
@@ -91,7 +90,13 @@ FRONTEND_DIR = os.environ.get("STATIC_DIR", os.path.join(os.path.dirname(__file_
 if os.path.isdir(FRONTEND_DIR):
     assets_dir = os.path.join(FRONTEND_DIR, "assets")
     if os.path.isdir(assets_dir):
-        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+        @app.get("/assets/{file_path:path}")
+        async def serve_assets(file_path: str):
+            full_path = os.path.join(assets_dir, file_path)
+            if os.path.isfile(full_path):
+                return FileResponse(full_path)
+            raise HTTPException(status_code=404)
 
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
