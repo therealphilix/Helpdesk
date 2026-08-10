@@ -1,6 +1,6 @@
 # Helpdesk
 
-AI-Powered Ticket Management System for handling student support emails. Tickets have statuses (`open`, `resolved`, `closed`) and categories (`general question`, `technical question`, `refund request`). Two user roles: Admin and Agent.
+AI-Powered Ticket Management System for handling customer support emails. Tickets have statuses (`open`, `resolved`, `closed`) and categories (`general question`, `technical question`, `refund request`). Two user roles: Admin and Agent.
 
 ## Tech Stack
 
