@@ -8,15 +8,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 import sentry_sdk
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
-from slowapi import _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
-from slowapi.middleware import SlowAPIASGIMiddleware
 from sqlalchemy import text
 
 from .core.config import settings
 from .core.csrf import OriginGuard
 from .core.database import engine
-from .core.limiter import limiter
 from .routers import auth, dashboard, tickets, users, webhooks
 from .services.session_cleanup import periodic_session_cleanup
 
@@ -59,8 +55,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-app.add_middleware(SlowAPIASGIMiddleware)
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS.split(","),
@@ -70,9 +64,6 @@ app.add_middleware(
 )
 
 app.add_middleware(OriginGuard)
-
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-app.state.limiter = limiter
 
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])

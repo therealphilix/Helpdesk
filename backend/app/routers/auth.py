@@ -6,7 +6,7 @@ from ..core.config import settings
 from ..core.csrf import CsrfProtect
 from ..core.database import get_db
 from ..core.dependencies import get_current_user
-from ..core.limiter import limiter
+from ..core.ratelimit import RateLimiter, parse_rate_limit
 from ..core.security import (
     generate_csrf_token,
     generate_session_token,
@@ -20,14 +20,17 @@ from ..schemas import LoginRequest, LoginResponse, UserOut
 
 router = APIRouter()
 
+_login_max, _login_window = parse_rate_limit(settings.LOGIN_RATE_LIMIT)
+_login_limiter = RateLimiter(key="login", max_requests=_login_max, window_seconds=_login_window)
+
 
 @router.post("/login", response_model=LoginResponse)
-@limiter.limit(settings.LOGIN_RATE_LIMIT)
 async def login(
     request: Request,
     body: LoginRequest,
     response: Response,
     db: AsyncSession = Depends(get_db),
+    _rate_limit: None = Depends(_login_limiter),
 ):
     result = await db.execute(select(User).where(User.email == body.email))
     user = result.scalar_one_or_none()
