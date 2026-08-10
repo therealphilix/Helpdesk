@@ -18,8 +18,8 @@ async def seed():
     ai_password = os.getenv("AI_AGENT_PASSWORD")
 
     if not admin_email or not admin_password:
-        print("Error: ADMIN_EMAIL and ADMIN_PASSWORD environment variables must be set.")
-        sys.exit(1)
+        print("Warning: ADMIN_EMAIL or ADMIN_PASSWORD not set — skipping admin creation")
+        return
 
     async with async_session() as db:
         result = await db.execute(select(User).where(User.email == admin_email))
