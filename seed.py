@@ -8,10 +8,10 @@ sys.path.insert(0, _path)
 
 from sqlalchemy import select
 
-from backend.app.core.database import async_session
-from backend.app.core.security import hash_password
-from backend.app.models import User
-from backend.app.models.enums import UserRole
+from app.core.database import async_session
+from app.core.security import hash_password
+from app.models import User
+from app.models.enums import UserRole
 
 
 async def seed():
