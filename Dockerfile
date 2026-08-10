@@ -12,6 +12,8 @@ COPY backend/pyproject.toml .
 RUN pip install --no-cache-dir .
 COPY backend/ .
 
+COPY seed.py .
+
 COPY --from=frontend-builder /app/dist ./frontend-dist
 
 COPY start.sh .

@@ -2,7 +2,9 @@ import asyncio
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "backend"))
+_base = os.path.dirname(os.path.abspath(__file__))
+_path = _base if os.path.isdir(os.path.join(_base, "app")) else os.path.join(_base, "backend")
+sys.path.insert(0, _path)
 
 from sqlalchemy import select
 
