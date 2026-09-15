@@ -1,16 +1,19 @@
 import DOMPurify from "dompurify"
 import { useMutation } from "@tanstack/react-query"
-import { Loader2, Sparkles } from "lucide-react"
+import { Loader2, Sparkles, Mail, Clock } from "lucide-react"
 import type { Ticket } from "../lib/tickets"
-import { statusVariant } from "../lib/tickets"
 import { apiClient } from "../api/client"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString()
+}
+
+function statusStampClass(status: string): string {
+  if (status === "open") return "stamp stamp-open"
+  if (status === "resolved") return "stamp stamp-resolved"
+  return "stamp stamp-closed"
 }
 
 export function TicketDetail({ ticket }: { ticket: Ticket }) {
@@ -20,41 +23,46 @@ export function TicketDetail({ ticket }: { ticket: Ticket }) {
   })
 
   return (
-    <Card>
-      <CardHeader>
+    <div className="paper-sheet rounded-xl overflow-hidden">
+      <div className="h-1 w-full bg-gradient-to-r from-primary via-accent to-primary opacity-70" />
+      <div className="p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <CardTitle className="break-words">{ticket.subject}</CardTitle>
-            <CardDescription className="mt-1">
-              {ticket.sender_name ? (
-                <>
-                  {ticket.sender_name}{" "}
-                  <span className="text-muted-foreground">
-                    &lt;{ticket.sender_email}&gt;
-                  </span>
-                </>
-              ) : (
-                ticket.sender_email
-              )}
-              <span className="text-muted-foreground"> &middot; {formatDate(ticket.created_at)}</span>
-            </CardDescription>
+            <p className="eyebrow">Correspondence #{ticket.id.slice(0, 8)}</p>
+            <h2 className="text-xl font-semibold leading-tight mt-1 break-words" style={{ fontFamily: "var(--font-display)" }}>
+              {ticket.subject}
+            </h2>
+            <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <Mail className="size-3" />
+                {ticket.sender_name ? (
+                  <>
+                    <span className="font-medium text-foreground">{ticket.sender_name}</span>
+                    <span>&lt;{ticket.sender_email}&gt;</span>
+                  </>
+                ) : (
+                  <span className="font-medium text-foreground">{ticket.sender_email}</span>
+                )}
+              </span>
+              <span className="opacity-40">·</span>
+              <span className="inline-flex items-center gap-1" style={{ fontFamily: "var(--font-mono)" }}>
+                <Clock className="size-3" /> {formatDate(ticket.created_at)}
+              </span>
+            </div>
           </div>
-          <Badge variant={statusVariant[ticket.status] || "secondary"}>
-            {ticket.status}
-          </Badge>
+          <span className={`${statusStampClass(ticket.status)} animate-stamp-in shrink-0`}>{ticket.status}</span>
         </div>
-      </CardHeader>
-      <CardContent>
-        <h3 className="text-sm font-medium text-muted-foreground mb-2">
-          Message Body
-        </h3>
+
+        <div className="brass-rule my-5" />
+
+        <h3 className="eyebrow mb-2">Message Body</h3>
         {ticket.body_html ? (
           <div
-            className="prose prose-sm max-w-none border rounded-lg p-4 bg-muted/30"
+            className="prose prose-sm max-w-none rounded-lg border border-dashed border-border p-4 bg-muted/20 text-sm leading-relaxed"
             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ticket.body_html) }}
           />
         ) : (
-          <div className="border rounded-lg p-4 bg-muted/30 whitespace-pre-wrap text-sm">
+          <div className="rounded-lg border border-dashed border-border p-4 bg-muted/20 whitespace-pre-wrap text-sm leading-relaxed">
             {ticket.body_text}
           </div>
         )}
@@ -65,6 +73,7 @@ export function TicketDetail({ ticket }: { ticket: Ticket }) {
             size="sm"
             onClick={() => summarize.mutate()}
             disabled={summarize.isPending}
+            className="rounded-full"
           >
             {summarize.isPending ? (
               <>
@@ -74,7 +83,7 @@ export function TicketDetail({ ticket }: { ticket: Ticket }) {
             ) : (
               <>
                 <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                Summarize
+                Summarize with AI
               </>
             )}
           </Button>
@@ -91,12 +100,13 @@ export function TicketDetail({ ticket }: { ticket: Ticket }) {
         )}
 
         {summarize.data?.summary && (
-          <div className="mt-3 border rounded-lg p-4 bg-muted/30">
-            <h4 className="text-sm font-semibold mb-2">Summary</h4>
-            <p className="text-sm whitespace-pre-wrap">{summarize.data.summary}</p>
+          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50/60 dark:bg-amber-950/20 dark:border-amber-900/40 p-4 relative overflow-hidden">
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-accent" />
+            <h4 className="eyebrow !text-accent-foreground">Clerk’s summary</h4>
+            <p className="text-sm whitespace-pre-wrap mt-2 leading-relaxed">{summarize.data.summary}</p>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

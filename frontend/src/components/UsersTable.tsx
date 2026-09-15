@@ -77,61 +77,69 @@ export function UsersTable() {
 
       {users && (
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead className="text-right">Created</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+          <TableHeader className="bg-muted/30">
+            <TableRow className="hover:bg-muted/30">
+              <TableHead className="eyebrow !normal-case">Name</TableHead>
+              <TableHead className="eyebrow !normal-case">Email</TableHead>
+              <TableHead className="eyebrow !normal-case">Role</TableHead>
+              <TableHead className="text-right eyebrow !normal-case">Created</TableHead>
+              <TableHead className="text-right eyebrow !normal-case">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                   No users found.
                 </TableCell>
               </TableRow>
             ) : (
-              users.map((u) => (
-                <TableRow key={u.id}>
-                  <TableCell className="font-medium">{u.name}</TableCell>
-                  <TableCell>{u.email}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={u.role === UserRole.ADMIN ? "default" : "secondary"}
-                    >
-                      {u.role}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right text-muted-foreground">
-                    {new Date(u.created_at).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setEditingUser({ id: u.id, name: u.name, email: u.email })}
-                        aria-label={`Edit ${u.name}`}
+              users.map((u) => {
+                const initial = (u.name?.[0] ?? u.email[0] ?? "?").toUpperCase();
+                return (
+                  <TableRow key={u.id} className="hover:bg-muted/30">
+                    <TableCell className="font-medium">
+                      <span className="flex items-center gap-2">
+                        <span className="flex size-6 items-center justify-center rounded-full bg-muted border border-border text-[10px] font-bold text-muted-foreground">{initial}</span>
+                        {u.name}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{u.email}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={u.role === UserRole.ADMIN ? "default" : "secondary"}
                       >
-                        <Pencil className="size-4" />
-                      </Button>
-                      {u.role !== UserRole.ADMIN && (
+                        {u.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground text-xs" style={{ fontFamily: "var(--font-mono)" }}>
+                      {new Date(u.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
                         <Button
                           variant="outline"
-                          size="icon"
-                          onClick={() => setDeletingUser({ id: u.id, name: u.name, role: u.role })}
-                          aria-label={`Delete ${u.name}`}
+                          size="icon-sm"
+                          onClick={() => setEditingUser({ id: u.id, name: u.name, email: u.email })}
+                          aria-label={`Edit ${u.name}`}
                         >
-                          <Trash2 className="size-4" />
+                          <Pencil className="size-3.5" />
                         </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
+                        {u.role !== UserRole.ADMIN && (
+                          <Button
+                            variant="outline"
+                            size="icon-sm"
+                            onClick={() => setDeletingUser({ id: u.id, name: u.name, role: u.role })}
+                            aria-label={`Delete ${u.name}`}
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>

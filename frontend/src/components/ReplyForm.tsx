@@ -41,12 +41,13 @@ export function ReplyForm({ ticket }: { ticket: Pick<Ticket, "id"> }) {
   }
 
   return (
-    <div className="mt-6">
-      <h3 className="text-sm font-medium text-muted-foreground mb-2">
-        Add Reply
-      </h3>
+    <div className="mt-6 paper-sheet rounded-xl p-4">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="eyebrow">Compose reply</h3>
+        <span className="text-[11px] text-muted-foreground" style={{ fontFamily: "var(--font-mono)" }}>⌘+Enter to send</span>
+      </div>
       <Textarea
-        placeholder="Type your reply..."
+        placeholder="Type your reply — plain language, warm and specific..."
         value={replyText}
         onChange={(e) => setReplyText(e.target.value)}
         onKeyDown={(e) => {
@@ -57,12 +58,14 @@ export function ReplyForm({ ticket }: { ticket: Pick<Ticket, "id"> }) {
         }}
         disabled={createReply.isPending}
         rows={4}
+        className="bg-background resize-none"
       />
-      <div className="flex justify-between mt-2">
+      <div className="flex justify-between mt-3">
         <Button
           variant="outline"
           onClick={handlePolish}
           disabled={polishReply.isPending || !replyText.trim()}
+          className="rounded-full"
         >
           {polishReply.isPending ? (
             <>
@@ -72,30 +75,31 @@ export function ReplyForm({ ticket }: { ticket: Pick<Ticket, "id"> }) {
           ) : (
             <>
               <Wand2 className="mr-1.5 h-4 w-4" />
-              Polish
+              Polish with AI
             </>
           )}
         </Button>
         <Button
           onClick={handleSubmitReply}
           disabled={createReply.isPending || !replyText.trim()}
+          className="rounded-full"
         >
           {createReply.isPending && (
             <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
           )}
           <Send className="mr-1.5 h-4 w-4" />
-          Send
+          Send reply
         </Button>
       </div>
       {createReply.isError && (
-        <p className="text-sm text-destructive mt-1">
+        <p className="text-sm text-destructive mt-2">
           {createReply.error instanceof Error
             ? createReply.error.message
             : "Failed to send reply."}
         </p>
       )}
       {polishReply.isError && (
-        <p className="text-sm text-destructive mt-1">
+        <p className="text-sm text-destructive mt-2">
           {polishReply.error instanceof Error
             ? polishReply.error.message
             : "Failed to polish reply."}

@@ -14,10 +14,17 @@ export function TicketsPage() {
   
   return (
     <AppLayout>
-      <h1 className="text-2xl font-medium tracking-tight mb-1">Tickets</h1>
-      <p className="text-muted-foreground text-sm mb-6">
-        View and manage support tickets.
-      </p>
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow">Mail queue</p>
+          <h1 className="text-[28px] font-semibold tracking-tight leading-none mt-1" style={{ fontFamily: "var(--font-display)" }}>Tickets</h1>
+          <p className="text-sm text-muted-foreground mt-1.5">
+            Sorted by postmark. Open a slip to read the letter.
+          </p>
+        </div>
+        <span className="hidden sm:inline-flex stamp stamp-category !rotate-0">Live sorting</span>
+      </div>
+      <div className="brass-rule my-6" />
       <TicketsTable />
     </AppLayout>
   );

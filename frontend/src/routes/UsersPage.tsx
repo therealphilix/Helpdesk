@@ -34,19 +34,23 @@ function UserList() {
   
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-end justify-between gap-4 mb-2">
         <div>
-          <h1 className="text-2xl font-medium tracking-tight">Users</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Manage user accounts and their roles.
+          <p className="eyebrow">Personnel</p>
+          <h1 className="text-[28px] font-semibold tracking-tight leading-none mt-1" style={{ fontFamily: "var(--font-display)" }}>Users</h1>
+          <p className="text-muted-foreground text-sm mt-1.5">
+            Clerks and administrators with drawer access.
           </p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
+        <Button onClick={() => setDialogOpen(true)} className="rounded-full">
           <Plus className="size-4" />
           Create User
         </Button>
       </div>
-      <UsersTable />
+      <div className="brass-rule my-6" />
+      <div className="paper-sheet rounded-xl overflow-hidden p-1">
+        <UsersTable />
+      </div>
       <CreateUserDialog open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>
   );

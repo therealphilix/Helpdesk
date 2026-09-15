@@ -62,46 +62,58 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-background desk-surface px-4 py-10">
       <div className="accent-strip fixed left-0 top-0 z-50 w-full" />
-      <div className="mb-8 flex items-center gap-2.5">
-        <div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+
+      <div className="mb-8 text-center">
+        <div className="mx-auto flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
           <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21.2 8.5c.6.6.6 1.5 0 2.1l-2.8 2.8c-.3.3-.3.8 0 1.1l2.8 2.8c.6.6.6 1.5 0 2.1L18.5 22c-.6.6-1.5.6-2.1 0l-2.8-2.8c-.3-.3-.8-.3-1.1 0L9.7 22c-.6.6-1.5.6-2.1 0l-2.7-2.7c-.6-.6-.6-1.5 0-2.1l2.8-2.8c.3-.3.3-.8 0-1.1L4.9 10.5c-.6-.6-.6-1.5 0-2.1L7.6 5.7c.6-.6 1.5-.6 2.1 0l2.8 2.8c.3.3.8.3 1.1 0l2.8-2.8c.6-.6 1.5-.6 2.1 0l2.7 2.8Z" />
-            <circle cx="12" cy="12" r="2" />
+            <path d="M3 8.5L12 12l9-3.5v7L12 19 3 15.5z" />
+            <path d="M12 12v7" />
+            <path d="M3 8.5l9 3.5 9-3.5L12 5z" />
           </svg>
         </div>
-        <h1 className="text-xl font-semibold tracking-tight">Helpdesk</h1>
+        <h1 className="mt-3 text-[22px] font-semibold tracking-tight" style={{ fontFamily: "var(--font-display)" }}>Helpdesk</h1>
+        <p className="eyebrow mt-1">Student correspondence — est. 2026</p>
       </div>
+
       <form
         noValidate
         onSubmit={handleSubmit(onSubmit)}
-        className="w-full max-w-sm"
+        className="w-full max-w-[380px]"
       >
-        <Card>
-          <CardHeader className="text-center">
-            <CardTitle>Sign in</CardTitle>
-            <CardDescription>
-              Enter your credentials to access your account
+        <Card className="paper-sheet perforated-top gap-0 py-0 overflow-hidden">
+          <div className="h-1 w-full bg-gradient-to-r from-primary via-accent to-primary opacity-80" />
+          <CardHeader className="text-center pt-7 pb-4">
+            <p className="eyebrow">Clerk sign-in</p>
+            <CardTitle className="text-xl mt-1" style={{ fontFamily: "var(--font-display)" }}>Open the drawer</CardTitle>
+            <CardDescription className="text-[13px]">
+              Enter your credentials to access the sorting room
             </CardDescription>
+            <div className="mx-auto mt-3 flex items-center gap-2">
+              <span className="stamp stamp-open !rotate-0 text-[9px]">Priority</span>
+              <span className="stamp stamp-category !rotate-0 text-[9px]">Confidential</span>
+            </div>
           </CardHeader>
 
-          <CardContent className="flex flex-col gap-4">
+          <CardContent className="flex flex-col gap-4 pb-6">
             {errors.root && (
-              <Alert variant="destructive">
+              <Alert variant="destructive" className="py-2">
                 <AlertDescription>{errors.root.message}</AlertDescription>
               </Alert>
             )}
 
             <div>
-              <Label htmlFor="email" className="mb-1.5">
+              <Label htmlFor="email" className="mb-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Email
               </Label>
               <Input
                 id="email"
                 type="email"
+                placeholder="clerk@campus.edu"
                 {...register("email")}
                 aria-invalid={!!errors.email}
+                className="bg-card"
               />
               {errors.email && (
                 <p className="text-destructive text-xs mt-1.5">
@@ -111,7 +123,7 @@ export function LoginPage() {
             </div>
 
             <div>
-              <Label htmlFor="password" className="mb-1.5">
+              <Label htmlFor="password" className="mb-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Password
               </Label>
               <Input
@@ -119,6 +131,7 @@ export function LoginPage() {
                 type="password"
                 {...register("password")}
                 aria-invalid={!!errors.password}
+                className="bg-card"
               />
               {errors.password && (
                 <p className="text-destructive text-xs mt-1.5">
@@ -128,12 +141,16 @@ export function LoginPage() {
             </div>
           </CardContent>
 
-          <CardFooter>
-            <Button type="submit" disabled={isSubmitting} className="w-full">
-              {isSubmitting ? "Signing in..." : "Sign In"}
+          <CardFooter className="flex flex-col gap-3 bg-muted/40 border-t border-dashed border-border px-6 py-4">
+            <Button type="submit" disabled={isSubmitting} className="w-full rounded-lg h-9 font-medium">
+              {isSubmitting ? "Unlocking drawer..." : "Sign In"}
             </Button>
+            <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
+              Protected correspondence. Posting is logged and postmarked.
+            </p>
           </CardFooter>
         </Card>
+        <p className="text-center eyebrow mt-4 opacity-60">Perforate along dotted line — do not fold</p>
       </form>
     </div>
   );

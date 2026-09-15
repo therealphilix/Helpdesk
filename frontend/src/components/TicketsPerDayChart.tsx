@@ -16,7 +16,7 @@ import type { TicketsPerDayEntry } from "../lib/tickets"
 const chartConfig = {
   tickets: {
     label: "Tickets",
-    color: "var(--chart-1)",
+    color: "var(--primary)",
   },
 } satisfies ChartConfig
 
@@ -31,7 +31,7 @@ export function TicketsPerDayChart() {
 
   if (isLoading) {
     return (
-      <Card>
+      <Card className="paper-sheet perforated-top">
         <CardHeader>
           <Skeleton className="h-5 w-48" />
         </CardHeader>
@@ -59,24 +59,27 @@ export function TicketsPerDayChart() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Tickets Per Day</CardTitle>
+    <Card className="paper-sheet perforated-top">
+      <CardHeader className="border-b border-dashed border-border">
+        <p className="eyebrow">Postmark volume</p>
+        <CardTitle style={{ fontFamily: "var(--font-display)" }}>Tickets Per Day</CardTitle>
+        <p className="text-xs text-muted-foreground">Last 14 days • stamped on arrival</p>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <ChartContainer config={chartConfig} className="h-[300px] w-full">
           <BarChart
             accessibilityLayer
             data={data}
             margin={{ left: 12, right: 12 }}
           >
-            <CartesianGrid vertical={false} />
+            <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="4 6" />
             <XAxis
               dataKey="date"
               tickLine={false}
               axisLine={false}
               tickMargin={8}
               minTickGap={32}
+              tick={{ fill: "var(--muted-foreground)", fontSize: 11, fontFamily: "var(--font-mono)" }}
               tickFormatter={(value: string) => {
                 const d = new Date(value)
                 return d.toLocaleDateString("en-US", {
@@ -86,6 +89,7 @@ export function TicketsPerDayChart() {
               }}
             />
             <ChartTooltip
+              cursor={{ fill: "var(--muted)", opacity: 0.3 }}
               content={
                 <ChartTooltipContent
                   labelFormatter={(value) => {
@@ -101,8 +105,9 @@ export function TicketsPerDayChart() {
             <Bar
               dataKey="count"
               name="tickets"
-              fill="var(--foreground)"
-              radius={4}
+              fill="var(--primary)"
+              fillOpacity={0.9}
+              radius={[6,6,0,0]}
             />
           </BarChart>
         </ChartContainer>

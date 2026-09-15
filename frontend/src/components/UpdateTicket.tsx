@@ -1,7 +1,7 @@
-import { Loader2 } from "lucide-react"
+import { Loader2, Paperclip } from "lucide-react"
 import type { Ticket } from "../lib/tickets"
 import { statusOptions, categoryOptions } from "../lib/tickets"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Select,
   SelectContent,
@@ -28,8 +28,8 @@ function formatDate(iso: string): string {
 
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-1">
-      <span className="text-sm font-medium text-muted-foreground">{label}</span>
+    <div className="flex flex-col gap-1.5">
+      <span className="eyebrow">{label}</span>
       <div>{children}</div>
     </div>
   )
@@ -37,8 +37,13 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
 
 export function UpdateTicket({ ticket, agents, isPending, onUpdate }: UpdateTicketProps) {
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-4">
+    <Card className="paper-sheet perforated-top gap-0 py-0 overflow-hidden sticky top-8">
+      <CardHeader className="flex flex-row items-center gap-2 py-4 border-b border-dashed border-border bg-muted/20">
+        <Paperclip className="size-4 text-accent -rotate-12" />
+        <CardTitle className="text-xs uppercase tracking-[0.12em] font-semibold" style={{ fontFamily: "var(--font-mono)" }}>Routing slip</CardTitle>
+        <span className="ml-auto text-[10px] text-muted-foreground" style={{ fontFamily: "var(--font-mono)" }}>#{ticket.id.slice(0, 6).toUpperCase()}</span>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4 py-5">
         <DetailRow label="Status">
           <div className="flex items-center gap-2">
             <Select
@@ -46,7 +51,7 @@ export function UpdateTicket({ ticket, agents, isPending, onUpdate }: UpdateTick
               onValueChange={(val) => onUpdate({ status: val })}
               disabled={isPending}
             >
-              <SelectTrigger className="w-full" aria-label="Status">
+              <SelectTrigger className="w-full bg-background" aria-label="Status">
                 <SelectValue>
                   {(val: string) => {
                     const option = statusOptions.find((o) => o.value === val)
@@ -76,7 +81,7 @@ export function UpdateTicket({ ticket, agents, isPending, onUpdate }: UpdateTick
               }
               disabled={isPending}
             >
-              <SelectTrigger className="w-full" aria-label="Category">
+              <SelectTrigger className="w-full bg-background" aria-label="Category">
                 <SelectValue>
                   {(val: string) => {
                     if (!val || val === "none") return "None"
@@ -108,7 +113,7 @@ export function UpdateTicket({ ticket, agents, isPending, onUpdate }: UpdateTick
               }
               disabled={isPending}
             >
-              <SelectTrigger className="w-full" aria-label="Assigned To">
+              <SelectTrigger className="w-full bg-background" aria-label="Assigned To">
                 <SelectValue>
                   {(val: string) => {
                     if (!val || val === "unassigned") return "Unassigned"
@@ -131,11 +136,12 @@ export function UpdateTicket({ ticket, agents, isPending, onUpdate }: UpdateTick
             )}
           </div>
         </DetailRow>
+        <div className="brass-rule my-1" />
         <DetailRow label="Created">
-          <span className="text-sm">{formatDate(ticket.created_at)}</span>
+          <span className="text-xs" style={{ fontFamily: "var(--font-mono)" }}>{formatDate(ticket.created_at)}</span>
         </DetailRow>
         <DetailRow label="Updated">
-          <span className="text-sm">{formatDate(ticket.updated_at)}</span>
+          <span className="text-xs" style={{ fontFamily: "var(--font-mono)" }}>{formatDate(ticket.updated_at)}</span>
         </DetailRow>
       </CardContent>
     </Card>

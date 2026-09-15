@@ -14,7 +14,7 @@ export function BackLink({ to, children }: BackLinkProps) {
     <Button
       variant="ghost"
       size="sm"
-      className="mb-4"
+      className="mb-4 rounded-full"
       onClick={() => navigate({ to })}
     >
       <ArrowLeft className="mr-1 h-4 w-4" />

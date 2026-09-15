@@ -11,9 +11,8 @@ import {
 import { useQuery } from "@tanstack/react-query"
 import { type AxiosError } from "axios"
 import { apiClient } from "../api/client"
-import { TicketStatus, statusVariant } from "../lib/tickets"
+import { TicketStatus } from "../lib/tickets"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -64,6 +63,29 @@ const COLUMN_TO_SORT_KEY: Record<string, string> = {
 
 const columnHelper = createColumnHelper<TicketRow>()
 
+function categoryStripe(category: string | null): string {
+  if (category === "refund request") return "category-stripe-refund"
+  if (category === "technical question") return "category-stripe-technical"
+  if (category === "general question") return "category-stripe-general"
+  return "category-stripe-none"
+}
+
+function StatusStamp({ status }: { status: string }) {
+  const cls =
+    status === "open"
+      ? "stamp stamp-open"
+      : status === "resolved"
+        ? "stamp stamp-resolved"
+        : "stamp stamp-closed"
+  return <span className={cls}>{status}</span>
+}
+
+function CategoryStamp({ category }: { category: string | null }) {
+  if (!category) return <span className="text-muted-foreground text-xs">—</span>
+  const refund = category === "refund request"
+  return <span className={`stamp ${refund ? "stamp-refund" : "stamp-category"}`}>{category}</span>
+}
+
 const columns = [
   columnHelper.accessor("sender_name", {
     id: "sender",
@@ -72,12 +94,16 @@ const columns = [
     cell: (info) => {
       const name = info.row.original.sender_name
       const email = info.row.original.sender_email
+      const initial = (name?.[0] ?? email[0] ?? "?").toUpperCase()
       return (
-        <div>
-          <div className="font-medium">{name || email}</div>
-          {name && (
-            <div className="text-xs text-muted-foreground">{email}</div>
-          )}
+        <div className="flex items-center gap-2.5">
+          <span className="flex size-7 items-center justify-center rounded-full bg-muted border border-border text-[11px] font-semibold text-muted-foreground">
+            {initial}
+          </span>
+          <div className="min-w-0">
+            <div className="font-medium text-sm leading-none truncate">{name || email}</div>
+            {name && <div className="text-xs text-muted-foreground truncate">{email}</div>}
+          </div>
         </div>
       )
     },
@@ -87,29 +113,20 @@ const columns = [
     header: "Subject",
     enableSorting: true,
     cell: (info) => (
-      <span className="max-w-64 truncate">{info.getValue()}</span>
+      <span className="max-w-64 truncate block font-medium text-sm">{info.getValue()}</span>
     ),
   }),
   columnHelper.accessor("status", {
     id: "status",
     header: "Status",
     enableSorting: true,
-    cell: (info) => (
-      <Badge variant={statusVariant[info.getValue()] || "secondary"}>
-        {info.getValue()}
-      </Badge>
-    ),
+    cell: (info) => <StatusStamp status={info.getValue()} />,
   }),
   columnHelper.accessor("category", {
     id: "category",
     header: "Category",
     enableSorting: true,
-    cell: (info) =>
-      info.getValue() ? (
-        <Badge variant="secondary">{info.getValue()}</Badge>
-      ) : (
-        <span className="text-muted-foreground text-sm">&mdash;</span>
-      ),
+    cell: (info) => <CategoryStamp category={info.getValue()} />,
   }),
   columnHelper.accessor("assignee_name", {
     id: "assignee",
@@ -117,15 +134,15 @@ const columns = [
     enableSorting: true,
     cell: (info) =>
       info.getValue() || (
-        <span className="text-muted-foreground text-sm">Unassigned</span>
+        <span className="text-muted-foreground text-xs italic">Unassigned</span>
       ),
   }),
   columnHelper.accessor("created_at", {
     id: "created",
-    header: "Created",
+    header: "Postmarked",
     enableSorting: true,
     cell: (info) => (
-      <span className="text-muted-foreground">
+      <span className="text-muted-foreground text-xs" style={{ fontFamily: "var(--font-mono)" }}>
         {new Date(info.getValue()).toLocaleDateString()}
       </span>
     ),
@@ -133,9 +150,9 @@ const columns = [
 ]
 
 function SortIcon({ sorted }: { sorted: false | "asc" | "desc" }) {
-  if (sorted === "asc") return <span className="ml-1">&#9650;</span>
-  if (sorted === "desc") return <span className="ml-1">&#9660;</span>
-  return <span className="ml-1 text-muted-foreground/40">&#8597;</span>
+  if (sorted === "asc") return <span className="ml-1 text-primary">&#9650;</span>
+  if (sorted === "desc") return <span className="ml-1 text-primary">&#9660;</span>
+  return <span className="ml-1 text-muted-foreground/30">&#8597;</span>
 }
 
 export function TicketsTable() {
@@ -234,31 +251,33 @@ export function TicketsTable() {
     return (
       <>
         {filterBar}
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <TableRow key={i}>
-                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-64" /></TableCell>
-                <TableCell><Skeleton className="h-5 w-14 rounded-md" /></TableCell>
-                <TableCell><Skeleton className="h-5 w-24 rounded-md" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                <TableCell className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <div className="paper-sheet rounded-xl overflow-hidden">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead key={header.id}>
+                      <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-64" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-14 rounded-md" /></TableCell>
+                  <TableCell><Skeleton className="h-5 w-24 rounded-md" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                  <TableCell className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </>
     )
   }
@@ -283,65 +302,70 @@ export function TicketsTable() {
   return (
     <>
       {filterBar}
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <TableHead
-                  key={header.id}
-                  className={header.column.getCanSort() ? "cursor-pointer select-none" : ""}
-                  onClick={header.column.getToggleSortingHandler()}
-                >
-                  <span>
-                    {flexRender(header.column.columnDef.header, header.getContext())}
-                    {header.column.getCanSort() && (
-                      <SortIcon sorted={header.column.getIsSorted()} />
-                    )}
-                  </span>
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={columns.length} className="text-center text-muted-foreground">
-                No tickets found.
-              </TableCell>
-            </TableRow>
-          ) : (
-            table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                className="cursor-pointer hover:bg-muted/50"
-                tabIndex={0}
-                onClick={() => navigate({ to: `/tickets/${row.original.id}` })}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault()
-                    navigate({ to: `/tickets/${row.original.id}` })
-                  }
-                }}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
+      <div className="paper-sheet rounded-xl overflow-hidden">
+        <Table>
+          <TableHeader className="bg-muted/30">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id} className="hover:bg-muted/30">
+                {headerGroup.headers.map((header) => (
+                  <TableHead
+                    key={header.id}
+                    className={`eyebrow !normal-case !tracking-[0.04em] !text-[11px] ${header.column.getCanSort() ? "cursor-pointer select-none" : ""}`}
+                    onClick={header.column.getToggleSortingHandler()}
+                  >
+                    <span>
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      {header.column.getCanSort() && (
+                        <SortIcon sorted={header.column.getIsSorted()} />
+                      )}
+                    </span>
+                  </TableHead>
                 ))}
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-      <TicketPagination
-        pageIndex={pagination.pageIndex}
-        pageSize={pagination.pageSize}
-        total={total}
-        onPageChange={(pageIndex) => setPagination((prev) => ({ ...prev, pageIndex }))}
-        onPageSizeChange={(pageSize) => setPagination({ pageIndex: 0, pageSize })}
-      />
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="text-center text-muted-foreground py-10">
+                  <p className="eyebrow">Empty drawer</p>
+                  <p className="text-sm mt-1">No tickets found for this filter.</p>
+                </TableCell>
+              </TableRow>
+            ) : (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  className={`cursor-pointer hover:bg-muted/40 border-l-[3px] ${categoryStripe(row.original.category)} transition-colors`}
+                  tabIndex={0}
+                  onClick={() => navigate({ to: `/tickets/${row.original.id}` })}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault()
+                      navigate({ to: `/tickets/${row.original.id}` })
+                    }
+                  }}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="mt-4">
+        <TicketPagination
+          pageIndex={pagination.pageIndex}
+          pageSize={pagination.pageSize}
+          total={total}
+          onPageChange={(pageIndex) => setPagination((prev) => ({ ...prev, pageIndex }))}
+          onPageSizeChange={(pageSize) => setPagination({ pageIndex: 0, pageSize })}
+        />
+      </div>
     </>
   )
 }
