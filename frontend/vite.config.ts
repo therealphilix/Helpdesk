@@ -30,6 +30,18 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:8000',
     },
+    allowedHosts: (() => {
+      const raw =
+        process.env.VITE_ALLOWED_HOSTS ??
+        process.env.ALLOWED_HOSTS ??
+        process.env.NGROK_HOST ??
+        "";
+      if (!raw) return [];
+      return raw
+        .split(",")
+        .map((h) => h.trim())
+        .filter(Boolean);
+    })(),
   },
   build: {
     sourcemap: true,
